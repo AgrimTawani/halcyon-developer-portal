@@ -12,9 +12,10 @@ export function usePlaygroundChat() {
   const [ttft, setTtft] = useState<number | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
-  const abortRef = useRef<AbortController | null>(null)
-  const startRef = useRef<number>(0)
-  const tickRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const abortRef    = useRef<AbortController | null>(null)
+  const startRef    = useRef<number>(0)
+  const tickRef     = useRef<ReturnType<typeof setInterval> | null>(null)
+  const tokenBaseRef = useRef<number>(0)
 
   const stopTicker = () => {
     if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
@@ -39,13 +40,14 @@ export function usePlaygroundChat() {
     setMessages(prev => [...prev, userMsg, asstMsg])
     setActiveId(asstId)
     setState('streaming')
-    setTokens(0); setTps(0); setTtft(null)
+    setTokens(prev => { tokenBaseRef.current = prev; return prev })
+    setTps(0); setTtft(null)
 
     startRef.current = performance.now()
-    let lastCount = 0
+    let streamCount = 0
     tickRef.current = setInterval(() => {
       const elapsed = (performance.now() - startRef.current) / 1000
-      if (elapsed > 0) setTps(parseFloat((lastCount / elapsed).toFixed(1)))
+      if (elapsed > 0) setTps(parseFloat((streamCount / elapsed).toFixed(1)))
     }, 100)
 
     try {
@@ -81,9 +83,8 @@ export function usePlaygroundChat() {
           try {
             const token = JSON.parse(d).token as string
             acc += token
-            const ct = (acc.match(/\S+/g) || []).length
-            lastCount = ct
-            setTokens(ct)
+            streamCount = (acc.match(/\S+/g) || []).length
+            setTokens(tokenBaseRef.current + streamCount)
             setMessages(prev => prev.map(m => m.id === asstId ? { ...m, text: acc } : m))
           } catch { /* skip malformed */ }
         }
@@ -91,7 +92,7 @@ export function usePlaygroundChat() {
 
       stopTicker()
       const elapsed = (performance.now() - startRef.current) / 1000
-      setTps(parseFloat((elapsed > 0 ? lastCount / elapsed : 0).toFixed(1)))
+      setTps(parseFloat((elapsed > 0 ? streamCount / elapsed : 0).toFixed(1)))
       setState('done')
       setActiveId(null)
     } catch (err) {
@@ -151,6 +152,7 @@ export function usePlaygroundChat() {
     abortRef.current?.abort()
     stopTicker()
     setMessages([])
+    tokenBaseRef.current = 0
     setTokens(0); setTps(0); setTtft(null)
     setState('idle')
     setActiveId(null)
