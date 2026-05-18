@@ -6,9 +6,10 @@ interface Props {
   tokens: number
   tps: number
   ttft: number | null
+  model?: string
 }
 
-export function ChatMetricsBar({ state, tokens, tps, ttft }: Props) {
+export function ChatMetricsBar({ state, tokens, tps, ttft, model }: Props) {
   const dotState  = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : 'idle'
   const label     = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : state === 'done' ? 'complete' : 'idle'
 
@@ -103,7 +104,7 @@ export function ChatMetricsBar({ state, tokens, tps, ttft }: Props) {
           }}
         >
           <span style={{ color: 'var(--fg-4)', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.10em', fontWeight: 600 }}>model</span>
-          <span>halcyon-x-70b</span>
+          <span>{model ?? 'llama-3.3-70b-versatile'}</span>
         </div>
       </div>
     </div>

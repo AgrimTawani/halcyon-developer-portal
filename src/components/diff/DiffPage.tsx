@@ -4,13 +4,14 @@ import type { DiffResult } from '@/types'
 import { computeDiff } from '@/lib/diff'
 import { DiffPanels } from './DiffPanels'
 import { DiffSummaryBar } from './DiffSummaryBar'
-
-const EMPTY_RESULT: DiffResult = { tokens: [], similarity: 0, counts: { unchanged: 0, added: 0, removed: 0, changed: 0 } }
+import { DEFAULT_MODEL, DEFAULT_MODEL_B } from '@/lib/models'
 
 export function DiffPage() {
   const [prompt, setPrompt]   = useState('')
   const [result, setResult]   = useState<DiffResult | null>(null)
   const [loading, setLoading] = useState(false)
+  const [modelA, setModelA]   = useState(DEFAULT_MODEL)
+  const [modelB, setModelB]   = useState(DEFAULT_MODEL_B)
 
   const handleCompare = useCallback(async () => {
     if (!prompt.trim()) return
@@ -18,8 +19,8 @@ export function DiffPage() {
     setResult(null)
     try {
       const [resA, resB] = await Promise.all([
-        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'model-a', prompt }) }),
-        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'model-b', prompt }) }),
+        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelA, prompt }) }),
+        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelB, prompt }) }),
       ])
       const { output: outA } = await resA.json()
       const { output: outB } = await resB.json()
@@ -27,7 +28,7 @@ export function DiffPage() {
     } finally {
       setLoading(false)
     }
-  }, [prompt])
+  }, [prompt, modelA, modelB])
 
   return (
     <div style={{
@@ -164,7 +165,14 @@ export function DiffPage() {
         {result && <DiffSummaryBar result={result} />}
 
         {/* Panels */}
-        <DiffPanels tokens={result?.tokens ?? []} loading={loading} />
+        <DiffPanels
+          tokens={result?.tokens ?? []}
+          loading={loading}
+          modelA={modelA}
+          modelB={modelB}
+          onModelAChange={setModelA}
+          onModelBChange={setModelB}
+        />
 
         {/* Algorithm details */}
         <details style={{

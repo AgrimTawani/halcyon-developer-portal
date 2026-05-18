@@ -6,12 +6,15 @@ import { EmptyState } from './EmptyState'
 import { Thread } from './Thread'
 import { Composer } from './Composer'
 import { SidePanel } from './SidePanel'
+import { DEFAULT_MODEL } from '@/lib/models'
 import type { InputMode } from '@/types'
 
 export function PlaygroundPage() {
   const inf       = usePlaygroundChat()
   const [mode, setMode]   = useState<InputMode>('text')
   const [value, setValue] = useState('')
+  const [model, setModel] = useState(DEFAULT_MODEL)
+  const [systemPrompt, setSystemPrompt] = useState('')
   const threadRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll while streaming
@@ -25,8 +28,8 @@ export function PlaygroundPage() {
   }, [inf.messages, inf.state])
 
   const handleSend = useCallback((args: { kind: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean }) => {
-    inf.send(args)
-  }, [inf])
+    inf.send({ ...args, model, systemPrompt })
+  }, [inf, model, systemPrompt])
 
   const handlePick = useCallback((text: string) => {
     setValue(text)
@@ -54,7 +57,7 @@ export function PlaygroundPage() {
       </a>
 
       {/* Metrics bar */}
-      <ChatMetricsBar state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} />
+      <ChatMetricsBar state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} model={model} />
 
       {/* Main shell */}
       <div style={{
@@ -89,7 +92,11 @@ export function PlaygroundPage() {
         </main>
 
         {/* Side panel — hidden on narrow viewports */}
-        <SidePanel state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} />
+        <SidePanel
+          state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft}
+          model={model} onModelChange={setModel}
+          systemPrompt={systemPrompt} onSystemPromptChange={setSystemPrompt}
+        />
       </div>
     </>
   )

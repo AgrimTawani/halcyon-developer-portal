@@ -2,6 +2,7 @@
 import { forwardRef } from 'react'
 import type { DiffToken } from '@/types'
 import { DiffOutput } from './DiffOutput'
+import { GROQ_MODELS } from '@/lib/models'
 
 interface Props {
   label: string
@@ -9,13 +10,14 @@ interface Props {
   panel: 'a' | 'b'
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void
   loading?: boolean
+  model: string
+  onModelChange: (m: string) => void
 }
 
 export const DiffPanel = forwardRef<HTMLDivElement, Props>(
-  ({ label, tokens, panel, onScroll, loading }, ref) => {
+  ({ label, tokens, panel, onScroll, loading, model, onModelChange }, ref) => {
     const accentColor  = panel === 'a' ? 'var(--color-error)' : 'var(--color-success)'
     const accentDim    = panel === 'a' ? 'var(--color-error-dim)' : 'var(--color-success-dim)'
-    const accentBorder = panel === 'a' ? 'oklch(0.55 0.22 27 / 0.20)' : 'oklch(0.65 0.20 145 / 0.20)'
 
     return (
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid var(--rule)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
@@ -43,9 +45,35 @@ export const DiffPanel = forwardRef<HTMLDivElement, Props>(
             color: 'var(--fg-2)',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
+            flexShrink: 0,
           }}>
             {label}
           </span>
+          <select
+            value={model}
+            onChange={e => onModelChange(e.target.value)}
+            aria-label={`Select model for ${label}`}
+            style={{
+              marginLeft: '8px',
+              appearance: 'none',
+              background: 'var(--ink)',
+              border: '1px solid var(--rule)',
+              borderRadius: '6px',
+              padding: '3px 22px 3px 8px',
+              fontFamily: 'var(--font-mono), monospace',
+              fontSize: '10.5px',
+              color: 'var(--fg)',
+              cursor: 'pointer',
+              outline: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23666' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 7px center',
+            }}
+          >
+            {GROQ_MODELS.map(m => (
+              <option key={m.id} value={m.id}>{m.label} {m.params}</option>
+            ))}
+          </select>
           {tokens.length > 0 && (
             <span style={{
               marginLeft: 'auto',

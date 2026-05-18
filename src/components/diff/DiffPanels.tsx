@@ -6,9 +6,13 @@ import { DiffPanel } from './DiffPanel'
 interface Props {
   tokens: DiffToken[]
   loading: boolean
+  modelA: string
+  modelB: string
+  onModelAChange: (m: string) => void
+  onModelBChange: (m: string) => void
 }
 
-export function DiffPanels({ tokens, loading }: Props) {
+export function DiffPanels({ tokens, loading, modelA, modelB, onModelAChange, onModelBChange }: Props) {
   const panelARef = useRef<HTMLDivElement>(null)
   const panelBRef = useRef<HTMLDivElement>(null)
 
@@ -24,19 +28,23 @@ export function DiffPanels({ tokens, loading }: Props) {
     <div style={{ display: 'flex', gap: 'var(--space-4)', flex: 1 }}>
       <DiffPanel
         ref={panelARef}
-        label="Model v1"
+        label="Model A"
         tokens={tokens}
         panel="a"
         onScroll={handleScrollA}
         loading={loading}
+        model={modelA}
+        onModelChange={onModelAChange}
       />
       <DiffPanel
         ref={panelBRef}
-        label="Model v2"
+        label="Model B"
         tokens={tokens}
         panel="b"
         onScroll={handleScrollB}
         loading={loading}
+        model={modelB}
+        onModelChange={onModelBChange}
       />
     </div>
   )
