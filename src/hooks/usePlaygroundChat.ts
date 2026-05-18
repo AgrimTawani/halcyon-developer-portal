@@ -12,10 +12,10 @@ export function usePlaygroundChat() {
   const [ttft, setTtft] = useState<number | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
-  const abortRef    = useRef<AbortController | null>(null)
-  const startRef    = useRef<number>(0)
-  const tickRef     = useRef<ReturnType<typeof setInterval> | null>(null)
-  const tokenBaseRef = useRef<number>(0)
+  const abortRef      = useRef<AbortController | null>(null)
+  const startRef      = useRef<number>(0)
+  const tickRef       = useRef<ReturnType<typeof setInterval> | null>(null)
+  const cumulativeRef = useRef<number>(0) // always-sync total across all turns
 
   const stopTicker = () => {
     if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
@@ -40,9 +40,9 @@ export function usePlaygroundChat() {
     setMessages(prev => [...prev, userMsg, asstMsg])
     setActiveId(asstId)
     setState('streaming')
-    setTokens(prev => { tokenBaseRef.current = prev; return prev })
     setTps(0); setTtft(null)
 
+    const base = cumulativeRef.current // captured synchronously before any async
     startRef.current = performance.now()
     let streamCount = 0
     tickRef.current = setInterval(() => {
@@ -84,13 +84,14 @@ export function usePlaygroundChat() {
             const token = JSON.parse(d).token as string
             acc += token
             streamCount = (acc.match(/\S+/g) || []).length
-            setTokens(tokenBaseRef.current + streamCount)
+            setTokens(base + streamCount)
             setMessages(prev => prev.map(m => m.id === asstId ? { ...m, text: acc } : m))
           } catch { /* skip malformed */ }
         }
       }
 
       stopTicker()
+      cumulativeRef.current = base + streamCount
       const elapsed = (performance.now() - startRef.current) / 1000
       setTps(parseFloat((elapsed > 0 ? streamCount / elapsed : 0).toFixed(1)))
       setState('done')
@@ -98,6 +99,7 @@ export function usePlaygroundChat() {
     } catch (err) {
       stopTicker()
       if (err instanceof Error && err.name === 'AbortError') {
+        cumulativeRef.current = base + streamCount
         setMessages(prev => prev.map(m => m.id === asstId ? { ...m, stopped: true } as AssistantMessage : m))
         setState('done')
         setActiveId(null)
@@ -152,7 +154,7 @@ export function usePlaygroundChat() {
     abortRef.current?.abort()
     stopTicker()
     setMessages([])
-    tokenBaseRef.current = 0
+    cumulativeRef.current = 0
     setTokens(0); setTps(0); setTtft(null)
     setState('idle')
     setActiveId(null)
