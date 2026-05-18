@@ -17,7 +17,6 @@ export function Navbar() {
       gap: '32px',
       height: '60px',
       padding: '0 24px',
-      borderBottom: '1px solid var(--rule-soft)',
       background: 'var(--ink)',
       position: 'sticky',
       top: 0,

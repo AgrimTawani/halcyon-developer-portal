@@ -26,7 +26,6 @@ export const DiffPanel = forwardRef<HTMLDivElement, Props>(
           gap: '8px',
           padding: '10px var(--space-4)',
           background: accentDim,
-          borderBottom: `1px solid ${accentBorder}`,
           flexShrink: 0,
         }}>
           <span style={{

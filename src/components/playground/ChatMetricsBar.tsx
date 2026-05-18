@@ -40,7 +40,6 @@ export function ChatMetricsBar({ state, tokens, tps, ttft }: Props) {
       aria-atomic="false"
       style={{
         display: 'flex', alignItems: 'stretch',
-        borderBottom: '1px solid var(--rule-soft)',
         background: 'var(--ink)',
         padding: '0 24px',
         position: 'sticky', top: '60px', zIndex: 9,

@@ -122,7 +122,6 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
       aria-label="Message composer"
       onSubmit={e => { e.preventDefault(); submit() }}
       style={{
-        borderTop: '1px solid var(--rule-soft)',
         background: 'linear-gradient(180deg, oklch(0.138 0.020 270 / 0) 0%, var(--ink) 32%)',
         padding: '14px 24px 18px',
         position: 'sticky', bottom: 0,
@@ -150,7 +149,7 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
       }}
       >
         {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderBottom: '1px solid var(--rule-soft)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px' }}>
           {/* Mode toggle */}
           <div role="tablist" aria-label="Input mode" style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--graphite)', border: '1px solid var(--rule-soft)', borderRadius: '8px', padding: '2px' }}>
             {(['text', 'audio'] as InputMode[]).map(m => (
