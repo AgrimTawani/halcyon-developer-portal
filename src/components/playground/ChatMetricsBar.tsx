@@ -13,8 +13,7 @@ export function ChatMetricsBar({ state, tokens, tps, ttft }: Props) {
   const label     = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : state === 'done' ? 'complete' : 'idle'
 
   const cell: React.CSSProperties = {
-    padding: '12px 20px 11px',
-    borderRight: '1px solid var(--rule-soft)',
+    padding: '12px 28px 11px 0',
     display: 'flex', flexDirection: 'column', gap: '4px',
     minWidth: 0,
   }
@@ -84,7 +83,7 @@ export function ChatMetricsBar({ state, tokens, tps, ttft }: Props) {
       </div>
 
       {/* TTFT */}
-      <div style={{ ...cell, borderRight: 0, minWidth: '90px' }}>
+      <div style={{ ...cell, minWidth: '90px', paddingRight: 0 }}>
         <div style={lbl}>ttft</div>
         <div style={val}>
           <span>{ttft == null ? '—' : Math.round(ttft).toString()}</span>

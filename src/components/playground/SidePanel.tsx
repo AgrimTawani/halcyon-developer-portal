@@ -20,7 +20,7 @@ function SideH({ children }: { children: React.ReactNode }) {
       display: 'flex', alignItems: 'baseline', gap: '8px',
     }}>
       {children}
-      <span style={{ flex: 1, height: '1px', background: 'var(--rule-soft)', alignSelf: 'center', marginTop: '2px', display: 'block' }} />
+      <span style={{ flex: 1, height: '1px', background: 'oklch(0.245 0.024 270 / 0.45)', alignSelf: 'center', marginTop: '2px', display: 'block' }} />
     </h3>
   )
 }
@@ -63,7 +63,7 @@ export function SidePanel({ state, tokens, tps, ttft }: Props) {
   const [maxTok, setMaxTok] = useState(2048)
 
   const dotState = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : 'idle'
-  const section: React.CSSProperties = { padding: '18px 22px', borderBottom: '1px solid var(--rule-soft)' }
+  const section: React.CSSProperties = { padding: '22px 22px 8px' }
 
   return (
     <aside
@@ -113,7 +113,7 @@ export function SidePanel({ state, tokens, tps, ttft }: Props) {
       </div>
 
       {/* Stream */}
-      <div style={{ ...section, borderBottom: 0 }}>
+      <div style={{ ...section, paddingBottom: '22px' }}>
         <SideH>stream</SideH>
         <Row k="transport">sse</Row>
         <Row k="chunking">token</Row>

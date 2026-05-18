@@ -30,7 +30,7 @@ function UserMessage({ m }: { m: ChatMessage & { role: 'user' } }) {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>you · audio</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--fg-4)' }}>{time}</span>
         </div>
-        <div style={{ background: 'var(--graphite)', border: '1px solid var(--rule-soft)', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ background: 'var(--graphite)', borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--ash)', border: '1px solid var(--rule-soft)', borderRadius: '999px', padding: '6px 12px 6px 8px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--fg-2)' }}>
             <span aria-hidden="true" style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--accent)', color: 'var(--ink)', display: 'grid', placeItems: 'center', fontSize: '10px' }}>▸</span>
             <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', height: '14px' }}>
@@ -52,7 +52,7 @@ function UserMessage({ m }: { m: ChatMessage & { role: 'user' } }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>you</span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--fg-4)' }}>{time}</span>
       </div>
-      <div style={{ background: 'var(--graphite)', border: '1px solid var(--rule-soft)', borderRadius: '10px', padding: '14px 16px', fontSize: '14px', lineHeight: 1.7, color: 'var(--fg)' }}>
+      <div style={{ background: 'var(--graphite)', borderRadius: '14px', padding: '14px 18px', fontSize: '14px', lineHeight: 1.8, color: 'var(--fg)' }}>
         {m.text}
       </div>
     </article>
@@ -195,7 +195,7 @@ export function Thread({ messages, activeId, state, onRetry, onDismiss, threadRe
       }}
     >
       {messages.length > 0 ? (
-        <div style={{ maxWidth: '780px', margin: '0 auto', padding: '32px 32px 40px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        <div style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px 56px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
           {messages.map(m => {
             if (m.role === 'user') return <UserMessage key={m.id} m={m as ChatMessage & { role: 'user' }} />
             if (m.role === 'assistant') return (
