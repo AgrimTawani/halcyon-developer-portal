@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
-  const { prompt, model = 'llama-3.3-70b-versatile', systemPrompt = '', injectError = false } = await req.json()
+  const { prompt, model = 'llama-3.3-70b-versatile', systemPrompt = '', injectError = false, temperature = 0.7, topP = 0.95, maxTokens = 1024 } = await req.json()
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return new Response('GROQ_API_KEY not set', { status: 500 })
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ model, messages, stream: true, max_tokens: 1024, temperature: 0.7 }),
+    body: JSON.stringify({ model, messages, stream: true, max_tokens: maxTokens, temperature, top_p: topP }),
     signal: req.signal,
   })
 

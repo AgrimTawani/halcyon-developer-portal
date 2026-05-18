@@ -7,9 +7,11 @@ interface Props {
   tps: number
   ttft: number | null
   model?: string
+  showCode: boolean
+  onToggleCode: () => void
 }
 
-export function ChatMetricsBar({ state, tokens, tps, ttft, model }: Props) {
+export function ChatMetricsBar({ state, tokens, tps, ttft, model, showCode, onToggleCode }: Props) {
   const dotState  = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : 'idle'
   const label     = state === 'streaming' ? 'streaming' : state === 'error' ? 'error' : state === 'done' ? 'complete' : 'idle'
 
@@ -91,7 +93,7 @@ export function ChatMetricsBar({ state, tokens, tps, ttft, model }: Props) {
         </div>
       </div>
 
-      {/* Model chip */}
+      {/* Right side: model chip + code toggle */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', padding: '0 0 0 22px' }}>
         <div
           title="Active model"
@@ -106,6 +108,30 @@ export function ChatMetricsBar({ state, tokens, tps, ttft, model }: Props) {
           <span style={{ color: 'var(--fg-4)', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.10em', fontWeight: 600 }}>model</span>
           <span>{model ?? 'llama-3.3-70b-versatile'}</span>
         </div>
+
+        <button
+          type="button"
+          onClick={onToggleCode}
+          aria-pressed={showCode}
+          title={showCode ? 'Hide code' : 'Show API code'}
+          style={{
+            appearance: 'none', cursor: 'pointer',
+            height: '26px', padding: '0 11px',
+            borderRadius: '6px', border: '1px solid var(--rule-soft)',
+            background: showCode ? 'var(--accent-dim)' : 'var(--graphite)',
+            color: showCode ? 'var(--accent)' : 'var(--fg-3)',
+            fontFamily: 'var(--font-mono), monospace', fontSize: '11px', fontWeight: 500,
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            transition: 'background 140ms, color 140ms, border-color 140ms',
+            whiteSpace: 'nowrap', flexShrink: 0,
+            borderColor: showCode ? 'var(--accent-dim)' : 'var(--rule-soft)',
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5.5 3.5 2 8l3.5 4.5M10.5 3.5 14 8l-3.5 4.5"/>
+          </svg>
+          {showCode ? 'hide code' : 'show code'}
+        </button>
       </div>
     </div>
   )

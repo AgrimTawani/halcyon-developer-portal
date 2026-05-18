@@ -6,6 +6,7 @@ import { EmptyState } from './EmptyState'
 import { Thread } from './Thread'
 import { Composer } from './Composer'
 import { SidePanel } from './SidePanel'
+import { CodePanel } from './CodePanel'
 import { DEFAULT_MODEL } from '@/lib/models'
 import type { InputMode } from '@/types'
 
@@ -15,6 +16,11 @@ export function PlaygroundPage() {
   const [value, setValue] = useState('')
   const [model, setModel] = useState(DEFAULT_MODEL)
   const [systemPrompt, setSystemPrompt] = useState('')
+  const [temperature, setTemperature] = useState(0.7)
+  const [topP, setTopP]               = useState(0.95)
+  const [maxTokens, setMaxTokens]     = useState(1024)
+  const [injectError, setInjectError] = useState(false)
+  const [showCode, setShowCode]       = useState(false)
   const threadRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll while streaming
@@ -28,8 +34,9 @@ export function PlaygroundPage() {
   }, [inf.messages, inf.state])
 
   const handleSend = useCallback((args: { kind: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean }) => {
-    inf.send({ ...args, model, systemPrompt })
-  }, [inf, model, systemPrompt])
+    inf.send({ ...args, model, systemPrompt, temperature, topP, maxTokens, injectError })
+    if (injectError) setInjectError(false) // auto-reset after use
+  }, [inf, model, systemPrompt, temperature, topP, maxTokens, injectError])
 
   const handlePick = useCallback((text: string) => {
     setValue(text)
@@ -57,7 +64,10 @@ export function PlaygroundPage() {
       </a>
 
       {/* Metrics bar */}
-      <ChatMetricsBar state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} model={model} />
+      <ChatMetricsBar
+        state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} model={model}
+        showCode={showCode} onToggleCode={() => setShowCode(s => !s)}
+      />
 
       {/* Main shell */}
       <div style={{
@@ -67,7 +77,15 @@ export function PlaygroundPage() {
         overflow: 'hidden',
       }}>
         <main style={{ display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
-          {inf.messages.length === 0 ? (
+          {showCode ? (
+            <CodePanel
+              model={model}
+              systemPrompt={systemPrompt}
+              temperature={temperature}
+              topP={topP}
+              maxTokens={maxTokens}
+            />
+          ) : inf.messages.length === 0 ? (
             <EmptyState onPick={handlePick} />
           ) : (
             <Thread
@@ -96,6 +114,10 @@ export function PlaygroundPage() {
           state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft}
           model={model} onModelChange={setModel}
           systemPrompt={systemPrompt} onSystemPromptChange={setSystemPrompt}
+          temperature={temperature} onTemperatureChange={setTemperature}
+          topP={topP} onTopPChange={setTopP}
+          maxTokens={maxTokens} onMaxTokensChange={setMaxTokens}
+          injectError={injectError} onInjectErrorChange={setInjectError}
         />
       </div>
     </>

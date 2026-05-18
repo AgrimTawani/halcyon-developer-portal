@@ -28,7 +28,10 @@ export function usePlaygroundChat() {
     injectError = false,
     model = 'llama-3.3-70b-versatile',
     systemPrompt = '',
-  }: { kind?: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean; model?: string; systemPrompt?: string }) => {
+    temperature = 0.7,
+    topP = 0.95,
+    maxTokens = 1024,
+  }: { kind?: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean; model?: string; systemPrompt?: string; temperature?: number; topP?: number; maxTokens?: number }) => {
     abortRef.current?.abort()
     abortRef.current = new AbortController()
 
@@ -56,7 +59,7 @@ export function usePlaygroundChat() {
       const res = await fetch('/api/inference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text, model, systemPrompt, injectError }),
+        body: JSON.stringify({ prompt: text, model, systemPrompt, temperature, topP, maxTokens, injectError }),
         signal: abortRef.current.signal,
       })
       if (!res.ok) throw new Error(`server:${res.status}`)

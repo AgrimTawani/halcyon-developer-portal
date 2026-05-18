@@ -11,6 +11,14 @@ interface Props {
   onModelChange: (m: string) => void
   systemPrompt: string
   onSystemPromptChange: (s: string) => void
+  temperature: number
+  onTemperatureChange: (v: number) => void
+  topP: number
+  onTopPChange: (v: number) => void
+  maxTokens: number
+  onMaxTokensChange: (v: number) => void
+  injectError: boolean
+  onInjectErrorChange: (v: boolean) => void
 }
 
 function SideH({ children }: { children: React.ReactNode }) {
@@ -71,11 +79,7 @@ const selectStyle: React.CSSProperties = {
   backgroundPosition: 'right 10px center',
 }
 
-export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, systemPrompt, onSystemPromptChange }: Props) {
-  const [temp, setTemp]     = React.useState(0.7)
-  const [topP, setTopP]     = React.useState(0.95)
-  const [maxTok, setMaxTok] = React.useState(1024)
-
+export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, systemPrompt, onSystemPromptChange, temperature, onTemperatureChange, topP, onTopPChange, maxTokens, onMaxTokensChange, injectError, onInjectErrorChange }: Props) {
   const active = modelById(model)
   const section: React.CSSProperties = { padding: '22px 22px 8px' }
 
@@ -140,9 +144,9 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
       {/* Parameters */}
       <div style={section}>
         <SideH>parameters</SideH>
-        <Slider label="temperature" value={temp}   onChange={setTemp}   min={0} max={2}    step={0.01} />
-        <Slider label="top_p"       value={topP}   onChange={setTopP}   min={0} max={1}    step={0.01} />
-        <Slider label="max_tokens"  value={maxTok} onChange={setMaxTok} min={64} max={4096} step={64}  />
+        <Slider label="temperature" value={temperature} onChange={onTemperatureChange} min={0} max={2}    step={0.01} />
+        <Slider label="top_p"       value={topP}       onChange={onTopPChange}        min={0} max={1}    step={0.01} />
+        <Slider label="max_tokens"  value={maxTokens}  onChange={onMaxTokensChange}   min={64} max={4096} step={64}  />
       </div>
 
       {/* Live */}
@@ -162,11 +166,46 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
       </div>
 
       {/* Stream */}
-      <div style={{ ...section, paddingBottom: '22px' }}>
+      <div style={section}>
         <SideH>stream</SideH>
         <Row k="transport">sse</Row>
         <Row k="chunking">token</Row>
         <Row k="format">utf-8</Row>
+      </div>
+
+      {/* Debug */}
+      <div style={{ ...section, paddingBottom: '22px' }}>
+        <SideH>debug</SideH>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+          <span style={{ color: 'var(--fg-3)', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>inject error</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={injectError}
+            onClick={() => onInjectErrorChange(!injectError)}
+            title="Force a mid-stream error after ~8 tokens to test error handling"
+            style={{
+              appearance: 'none', border: 0, cursor: 'pointer',
+              width: '36px', height: '20px', borderRadius: '10px',
+              background: injectError ? 'var(--color-error)' : 'var(--rule)',
+              position: 'relative', transition: 'background 150ms', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: '3px',
+              left: injectError ? '19px' : '3px',
+              width: '14px', height: '14px', borderRadius: '50%',
+              background: 'oklch(0.95 0.01 270)',
+              transition: 'left 150ms',
+              display: 'block',
+            }} />
+          </button>
+        </div>
+        {injectError && (
+          <p style={{ margin: '4px 0 0', fontSize: '10.5px', color: 'var(--color-error)', fontFamily: 'var(--font-mono)', lineHeight: 1.5 }}>
+            next request will fail after ~8 tokens
+          </p>
+        )}
       </div>
     </aside>
   )
