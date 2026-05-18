@@ -104,6 +104,7 @@ export function PlaygroundPage() {
         <CodePanel
           model={model}
           systemPrompt={systemPrompt}
+          userPrompt={value}
           temperature={temperature}
           topP={topP}
           maxTokens={maxTokens}

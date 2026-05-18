@@ -7,6 +7,7 @@ type Lang = 'curl' | 'javascript' | 'python' | 'json'
 interface Props {
   model: string
   systemPrompt: string
+  userPrompt: string
   temperature: number
   topP: number
   maxTokens: number
@@ -14,15 +15,15 @@ interface Props {
   onToggleCode: () => void
 }
 
-function buildMessages(systemPrompt: string) {
+function buildMessages(systemPrompt: string, userPrompt: string) {
   const msgs: { role: string; content: string }[] = []
   if (systemPrompt.trim()) msgs.push({ role: 'system', content: systemPrompt.trim() })
-  msgs.push({ role: 'user', content: '' })
+  msgs.push({ role: 'user', content: userPrompt })
   return msgs
 }
 
-function genCode(lang: Lang, { model, systemPrompt, temperature, topP, maxTokens }: Omit<Props, 'showCode' | 'onToggleCode'>): string {
-  const msgs = buildMessages(systemPrompt)
+function genCode(lang: Lang, { model, systemPrompt, userPrompt, temperature, topP, maxTokens }: Omit<Props, 'showCode' | 'onToggleCode'>): string {
+  const msgs = buildMessages(systemPrompt, userPrompt)
 
   if (lang === 'json') {
     return JSON.stringify(
@@ -141,11 +142,11 @@ function highlight(code: string, lang: Lang): React.ReactNode {
 
 const LANGS: Lang[] = ['curl', 'javascript', 'python', 'json']
 
-export function CodePanel({ model, systemPrompt, temperature, topP, maxTokens, showCode, onToggleCode }: Props) {
+export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, maxTokens, showCode, onToggleCode }: Props) {
   const [lang, setLang] = useState<Lang>('javascript')
   const [copiedPos, setCopiedPos] = useState<{ x: number; y: number } | null>(null)
 
-  const code = genCode(lang, { model, systemPrompt, temperature, topP, maxTokens })
+  const code = genCode(lang, { model, systemPrompt, userPrompt, temperature, topP, maxTokens })
 
   function copy(e: React.MouseEvent) {
     navigator.clipboard.writeText(code)
