@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import React from 'react'
 
 type Lang = 'curl' | 'javascript' | 'python' | 'json'
 
@@ -9,6 +10,8 @@ interface Props {
   temperature: number
   topP: number
   maxTokens: number
+  showCode: boolean
+  onToggleCode: () => void
 }
 
 function buildMessages(systemPrompt: string) {
@@ -18,7 +21,7 @@ function buildMessages(systemPrompt: string) {
   return msgs
 }
 
-function genCode(lang: Lang, { model, systemPrompt, temperature, topP, maxTokens }: Props): string {
+function genCode(lang: Lang, { model, systemPrompt, temperature, topP, maxTokens }: Omit<Props, 'showCode' | 'onToggleCode'>): string {
   const msgs = buildMessages(systemPrompt)
 
   if (lang === 'json') {
@@ -62,11 +65,11 @@ for await (const chunk of chatCompletion) {
 }`
   }
 
-  if (lang === 'python') {
-    const msgsStr = msgs
-      .map(m => `        {"role": "${m.role}", "content": ${JSON.stringify(m.content)}},`)
-      .join('\n')
-    return `from groq import Groq
+  // python
+  const msgsStr = msgs
+    .map(m => `        {"role": "${m.role}", "content": ${JSON.stringify(m.content)}},`)
+    .join('\n')
+  return `from groq import Groq
 
 client = Groq()
 chat_completion = client.chat.completions.create(
@@ -82,23 +85,18 @@ ${msgsStr}
 
 for chunk in chat_completion:
     print(chunk.choices[0].delta.content or "", end="")`
-  }
-
-  return ''
 }
 
-// Minimal syntax highlighter — no deps, covers the important tokens
+// Minimal syntax highlighter — no deps
 function highlight(code: string, lang: Lang): React.ReactNode {
-  // Color tokens
   const C = {
-    key:     'oklch(0.72 0.12 200)',   // JSON keys — teal
-    str:     'oklch(0.78 0.14 145)',   // strings — green
-    num:     'oklch(0.80 0.15 55)',    // numbers — amber
-    kw:      'oklch(0.75 0.15 270)',   // keywords — lavender
-    comment: 'oklch(0.55 0.02 270)',   // comments — muted
+    key:     'oklch(0.72 0.12 200)',
+    str:     'oklch(0.78 0.14 145)',
+    num:     'oklch(0.80 0.15 55)',
+    kw:      'oklch(0.75 0.15 270)',
+    comment: 'oklch(0.50 0.02 270)',
     plain:   'var(--fg)',
   }
-
   const KW: Record<Lang, string[]> = {
     javascript: ['import', 'from', 'const', 'await', 'for', 'of', 'new', 'true', 'false', 'null'],
     python:     ['from', 'import', 'for', 'in', 'True', 'False', 'None', 'print'],
@@ -106,143 +104,248 @@ function highlight(code: string, lang: Lang): React.ReactNode {
     json:       ['true', 'false', 'null'],
   }
   const kwSet = new Set(KW[lang])
-
   const nodes: React.ReactNode[] = []
-  let i = 0
-  let key = 0
-
+  let i = 0, key = 0
   const push = (color: string, text: string) =>
     nodes.push(<span key={key++} style={{ color }}>{text}</span>)
 
   while (i < code.length) {
-    // Shell / Python comment
     if (code[i] === '#') {
       const end = code.indexOf('\n', i)
       const slice = end === -1 ? code.slice(i) : code.slice(i, end)
-      push(C.comment, slice)
-      i += slice.length
-      continue
+      push(C.comment, slice); i += slice.length; continue
     }
-    // String
     if (code[i] === '"' || code[i] === "'") {
-      const q = code[i]
-      let j = i + 1
+      const q = code[i]; let j = i + 1
       while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++ }
       j++
       const slice = code.slice(i, j)
-      // JSON key: followed by ':' (possibly with whitespace)
-      if (lang === 'json' && /^\s*:/.test(code.slice(j))) {
-        push(C.key, slice)
-      } else {
-        push(C.str, slice)
-      }
-      i = j
-      continue
+      push(lang === 'json' && /^\s*:/.test(code.slice(j)) ? C.key : C.str, slice)
+      i = j; continue
     }
-    // Number (including negative)
     if (/[0-9]/.test(code[i]) || (code[i] === '-' && /[0-9]/.test(code[i + 1] ?? ''))) {
       let j = i; if (code[j] === '-') j++
       while (j < code.length && /[0-9.]/.test(code[j])) j++
-      push(C.num, code.slice(i, j))
-      i = j
-      continue
+      push(C.num, code.slice(i, j)); i = j; continue
     }
-    // Word
     if (/[a-zA-Z_$]/.test(code[i])) {
       let j = i
       while (j < code.length && /[a-zA-Z0-9_$]/.test(code[j])) j++
       const word = code.slice(i, j)
-      push(kwSet.has(word) ? C.kw : C.plain, word)
-      i = j
-      continue
+      push(kwSet.has(word) ? C.kw : C.plain, word); i = j; continue
     }
-    // Everything else
-    push(C.plain, code[i])
-    i++
+    push(C.plain, code[i]); i++
   }
-
   return <>{nodes}</>
 }
 
 const LANGS: Lang[] = ['curl', 'javascript', 'python', 'json']
 
-export function CodePanel({ model, systemPrompt, temperature, topP, maxTokens }: Props) {
+export function CodePanel({ model, systemPrompt, temperature, topP, maxTokens, showCode, onToggleCode }: Props) {
   const [lang, setLang] = useState<Lang>('javascript')
-  const [copied, setCopied] = useState(false)
+  const [copiedPos, setCopiedPos] = useState<{ x: number; y: number } | null>(null)
 
   const code = genCode(lang, { model, systemPrompt, temperature, topP, maxTokens })
 
-  function copy() {
+  function copy(e: React.MouseEvent) {
     navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopiedPos({ x: e.clientX, y: e.clientY })
+    setTimeout(() => setCopiedPos(null), 1600)
   }
 
+  // ── Collapsed strip ──────────────────────────────────────────────
+  if (!showCode) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Show API code panel"
+        onClick={onToggleCode}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggleCode() }}
+        style={{
+          width: '32px', flexShrink: 0,
+          borderLeft: '1px solid var(--rule-soft)',
+          background: 'var(--ink)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', gap: '10px',
+          color: 'var(--fg-4)',
+          transition: 'color 140ms, background 140ms',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.color = 'var(--fg)'
+          e.currentTarget.style.background = 'var(--graphite)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.color = 'var(--fg-4)'
+          e.currentTarget.style.background = 'var(--ink)'
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5.5 3.5 2 8l3.5 4.5M10.5 3.5 14 8l-3.5 4.5"/>
+        </svg>
+        <span style={{
+          writingMode: 'vertical-rl', transform: 'rotate(180deg)',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '10px', letterSpacing: '0.10em',
+          fontWeight: 500, userSelect: 'none', textTransform: 'uppercase',
+        }}>
+          code
+        </span>
+      </div>
+    )
+  }
+
+  // ── Expanded panel ───────────────────────────────────────────────
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '20px 28px 0' }}>
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexShrink: 0 }}>
+    <div style={{
+      width: '400px', flexShrink: 0,
+      borderLeft: '1px solid var(--rule-soft)',
+      background: 'var(--ink)',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+      {/* ── Header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '9px 12px',
+        borderBottom: '1px solid var(--rule-soft)',
+        flexShrink: 0,
+      }}>
+        {/* Hide button */}
+        <button
+          type="button"
+          onClick={onToggleCode}
+          aria-label="Hide code panel"
+          title="Hide code"
+          style={{
+            appearance: 'none', cursor: 'pointer',
+            border: '1px solid var(--rule-soft)',
+            borderRadius: '5px',
+            background: 'transparent',
+            color: 'var(--fg-4)',
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            fontFamily: 'var(--font-mono), monospace',
+            fontSize: '10.5px', fontWeight: 500,
+            padding: '3px 8px', flexShrink: 0,
+            transition: 'color 130ms, background 130ms, border-color 130ms',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = 'var(--fg)'
+            e.currentTarget.style.background = 'var(--graphite)'
+            e.currentTarget.style.borderColor = 'var(--rule)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = 'var(--fg-4)'
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = 'var(--rule-soft)'
+          }}
+        >
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <path d="M7 1L3 5l4 4"/>
+          </svg>
+          hide
+        </button>
+
+        {/* Language tabs */}
         <div style={{
-          display: 'inline-flex', gap: '2px',
+          display: 'flex', flex: 1,
           background: 'var(--graphite)', border: '1px solid var(--rule-soft)',
-          borderRadius: '8px', padding: '2px',
+          borderRadius: '7px', padding: '2px', gap: '1px',
         }}>
           {LANGS.map(l => (
             <button key={l} type="button" onClick={() => setLang(l)} style={{
               appearance: 'none', border: 0, cursor: 'pointer',
-              padding: '4px 13px', borderRadius: '6px',
+              flex: 1, padding: '3px 0', borderRadius: '5px',
               fontFamily: 'var(--font-mono), monospace',
-              fontSize: '11.5px', fontWeight: 500,
+              fontSize: '10.5px', fontWeight: 500,
               background: lang === l ? 'var(--ash)' : 'transparent',
               color: lang === l ? 'var(--fg)' : 'var(--fg-3)',
-              transition: 'background 120ms, color 120ms',
-              boxShadow: lang === l ? '0 1px 2px oklch(0 0 0 / 0.25)' : 'none',
+              transition: 'background 100ms, color 100ms',
+              boxShadow: lang === l ? '0 1px 2px oklch(0 0 0 / 0.30)' : 'none',
             }}>{l}</button>
           ))}
         </div>
 
-        <button type="button" onClick={copy} style={{
-          appearance: 'none',
-          border: '1px solid var(--rule)',
-          cursor: 'pointer',
-          padding: '5px 14px',
-          borderRadius: '6px',
-          fontFamily: 'var(--font-mono), monospace',
-          fontSize: '11px', fontWeight: 500,
-          background: 'var(--graphite)',
-          color: copied ? 'var(--color-success)' : 'var(--fg-2)',
-          transition: 'color 150ms, border-color 150ms',
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-        }}>
-          {copied
-            ? <>✓ copied</>
-            : <><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>copy</>
-          }
+        {/* Copy button */}
+        <button
+          type="button"
+          onClick={copy}
+          aria-label="Copy code to clipboard"
+          style={{
+            appearance: 'none', cursor: 'pointer',
+            border: '1px solid var(--rule-soft)',
+            borderRadius: '5px', padding: '3px 9px',
+            background: 'var(--graphite)',
+            fontFamily: 'var(--font-mono), monospace',
+            fontSize: '10.5px', fontWeight: 500,
+            color: 'var(--fg-2)',
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            flexShrink: 0,
+            transition: 'background 130ms, border-color 130ms, color 130ms',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--ash)'
+            e.currentTarget.style.borderColor = 'var(--rule)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'var(--graphite)'
+            e.currentTarget.style.borderColor = 'var(--rule-soft)'
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="5" y="5" width="9" height="9" rx="1.5"/>
+            <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/>
+          </svg>
+          copy
         </button>
       </div>
 
-      {/* Code block */}
+      {/* ── Code block ── */}
       <div style={{
-        flex: 1,
-        background: 'var(--field)',
-        border: '1px solid var(--rule)',
-        borderRadius: '10px 10px 0 0',
-        overflow: 'auto',
+        flex: 1, overflow: 'auto',
         scrollbarWidth: 'thin',
         scrollbarColor: 'var(--rule) transparent',
       }}>
         <pre style={{
-          margin: 0, padding: '20px 22px',
+          margin: 0, padding: '18px 20px',
           fontFamily: 'var(--font-mono), monospace',
-          fontSize: '12.5px', lineHeight: 1.72,
-          whiteSpace: 'pre',
-          tabSize: 2,
+          fontSize: '11.5px', lineHeight: 1.75,
+          whiteSpace: 'pre', tabSize: 2,
         }}>
           {highlight(code, lang)}
         </pre>
       </div>
+
+      {/* ── Cursor tooltip ── */}
+      {copiedPos && (
+        <div
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            left: copiedPos.x + 14,
+            top: copiedPos.y - 32,
+            background: 'var(--graphite)',
+            border: '1px solid var(--rule)',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            fontSize: '11.5px',
+            color: 'var(--color-success)',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 500,
+            pointerEvents: 'none',
+            zIndex: 9999,
+            animation: 'copiedFade 1.6s var(--ease-out) forwards',
+            boxShadow: '0 4px 14px oklch(0 0 0 / 0.45)',
+            display: 'flex', alignItems: 'center', gap: '5px',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2 6l3 3 5-5"/>
+          </svg>
+          copied
+        </div>
+      )}
     </div>
   )
 }
-
-import React from 'react'

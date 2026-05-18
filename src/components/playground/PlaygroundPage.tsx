@@ -20,7 +20,7 @@ export function PlaygroundPage() {
   const [topP, setTopP]               = useState(0.95)
   const [maxTokens, setMaxTokens]     = useState(1024)
   const [injectError, setInjectError] = useState(false)
-  const [showCode, setShowCode]       = useState(false)
+  const [showCode, setShowCode]       = useState(true)
   const threadRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll while streaming
@@ -66,26 +66,17 @@ export function PlaygroundPage() {
       {/* Metrics bar */}
       <ChatMetricsBar
         state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} model={model}
-        showCode={showCode} onToggleCode={() => setShowCode(s => !s)}
       />
 
-      {/* Main shell */}
+      {/* Main shell — flex so thread + code sit side by side */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 280px',
+        display: 'flex',
         height: `calc(100vh - ${navHeight}px - ${metricsHeight}px)`,
         overflow: 'hidden',
       }}>
-        <main style={{ display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
-          {showCode ? (
-            <CodePanel
-              model={model}
-              systemPrompt={systemPrompt}
-              temperature={temperature}
-              topP={topP}
-              maxTokens={maxTokens}
-            />
-          ) : inf.messages.length === 0 ? (
+        {/* Chat column */}
+        <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          {inf.messages.length === 0 ? (
             <EmptyState onPick={handlePick} />
           ) : (
             <Thread
@@ -109,7 +100,18 @@ export function PlaygroundPage() {
           />
         </main>
 
-        {/* Side panel — hidden on narrow viewports */}
+        {/* Code panel — always rendered; collapses to slim strip when hidden */}
+        <CodePanel
+          model={model}
+          systemPrompt={systemPrompt}
+          temperature={temperature}
+          topP={topP}
+          maxTokens={maxTokens}
+          showCode={showCode}
+          onToggleCode={() => setShowCode(s => !s)}
+        />
+
+        {/* Settings side panel */}
         <SidePanel
           state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft}
           model={model} onModelChange={setModel}

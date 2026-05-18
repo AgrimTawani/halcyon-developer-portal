@@ -105,6 +105,11 @@ body {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.16 28 / 0.45) }
   70%      { box-shadow: 0 0 0 10px oklch(0.72 0.16 28 / 0) }
 }
+@keyframes copiedFade {
+  0%   { opacity: 1; transform: translateY(0) }
+  60%  { opacity: 1; transform: translateY(-6px) }
+  100% { opacity: 0; transform: translateY(-12px) }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after {
