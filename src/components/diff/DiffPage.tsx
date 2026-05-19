@@ -4,27 +4,42 @@ import type { DiffResult } from '@/types'
 import { computeDiff } from '@/lib/diff'
 import { DiffPanels } from './DiffPanels'
 import { DiffSummaryBar } from './DiffSummaryBar'
+import { DiffMetricsBar, type ModelMetrics } from './DiffMetricsBar'
 import { DEFAULT_MODEL, DEFAULT_MODEL_B } from '@/lib/models'
 
+function countWords(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
 export function DiffPage() {
-  const [prompt, setPrompt]   = useState('')
-  const [result, setResult]   = useState<DiffResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [modelA, setModelA]   = useState(DEFAULT_MODEL)
-  const [modelB, setModelB]   = useState(DEFAULT_MODEL_B)
+  const [prompt, setPrompt]       = useState('')
+  const [result, setResult]       = useState<DiffResult | null>(null)
+  const [loading, setLoading]     = useState(false)
+  const [modelA, setModelA]       = useState(DEFAULT_MODEL)
+  const [modelB, setModelB]       = useState(DEFAULT_MODEL_B)
+  const [metricsA, setMetricsA]   = useState<ModelMetrics | null>(null)
+  const [metricsB, setMetricsB]   = useState<ModelMetrics | null>(null)
 
   const handleCompare = useCallback(async () => {
     if (!prompt.trim()) return
     setLoading(true)
     setResult(null)
+    setMetricsA(null)
+    setMetricsB(null)
+    const t0 = performance.now()
     try {
-      const [resA, resB] = await Promise.all([
-        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelA, prompt }) }),
-        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelB, prompt }) }),
+      const [{ res: resA, ms: msA }, { res: resB, ms: msB }] = await Promise.all([
+        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelA, prompt }) })
+          .then(res => ({ res, ms: Math.round(performance.now() - t0) })),
+        fetch('/api/diff-inference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelB, prompt }) })
+          .then(res => ({ res, ms: Math.round(performance.now() - t0) })),
       ])
       const { output: outA } = await resA.json()
       const { output: outB } = await resB.json()
       setResult(computeDiff(outA, outB))
+      const wA = countWords(outA), wB = countWords(outB)
+      setMetricsA({ latency: msA, words: wA, tokens: Math.round(wA * 1.35) })
+      setMetricsB({ latency: msB, words: wB, tokens: Math.round(wB * 1.35) })
     } finally {
       setLoading(false)
     }
@@ -106,6 +121,9 @@ export function DiffPage() {
 
         {/* Summary bar */}
         {result && <DiffSummaryBar result={result} />}
+
+        {/* Per-model metrics */}
+        {metricsA && metricsB && <DiffMetricsBar metricsA={metricsA} metricsB={metricsB} />}
 
         {/* Panels */}
         <DiffPanels
