@@ -3,10 +3,27 @@ import { NextRequest } from 'next/server'
 export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
-  const { prompt, model = 'llama-3.3-70b-versatile', systemPrompt = '', injectError = false, temperature = 0.7, topP = 0.95, maxTokens = 1024 } = await req.json()
+  const { prompt, model = 'llama-3.3-70b-versatile', systemPrompt = '', injectError = '', temperature = 0.7, topP = 0.95, maxTokens = 1024 } = await req.json()
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return new Response('GROQ_API_KEY not set', { status: 500 })
+
+  // Simulate real Groq API error responses for demo purposes
+  if (injectError) {
+    const errors: Record<string, { status: number; message: string; code: string }> = {
+      '429': { status: 429, message: `Rate limit reached for model ${model}. Please retry after 60 seconds.`, code: 'rate_limit_exceeded' },
+      '401': { status: 401, message: 'Invalid API Key. You can find your API key at https://console.groq.com/keys.', code: 'invalid_api_key' },
+      '500': { status: 500, message: 'Internal server error. The model worker encountered an unexpected condition.', code: 'internal_server_error' },
+      '503': { status: 503, message: 'Service temporarily unavailable. The model is currently overloaded with requests. Please try again shortly.', code: 'service_unavailable' },
+    }
+    const err = errors[injectError]
+    if (err) {
+      return new Response(
+        `Groq error: ${JSON.stringify({ error: { message: err.message, type: 'api_error', code: err.code } })}`,
+        { status: err.status }
+      )
+    }
+  }
 
   const messages: { role: string; content: string }[] = []
   if (systemPrompt?.trim()) messages.push({ role: 'system', content: systemPrompt.trim() })
@@ -51,11 +68,6 @@ export async function POST(req: NextRequest) {
             try {
               const token = JSON.parse(data).choices?.[0]?.delta?.content
               if (!token) continue
-              if (injectError && tokensSent >= 8) {
-                enq(`data: ${JSON.stringify({ error: 'UPSTREAM_TIMEOUT', message: 'Model worker did not respond within budget (simulated)' })}\n\n`)
-                controller.close()
-                return
-              }
               enq(`data: ${JSON.stringify({ token })}\n\n`)
               tokensSent++
             } catch { /* skip malformed */ }

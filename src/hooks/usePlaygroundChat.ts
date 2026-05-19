@@ -36,13 +36,13 @@ export function usePlaygroundChat() {
     kind = 'text' as 'text' | 'audio',
     text,
     audioLabel,
-    injectError = false,
+    injectError = '',
     model = 'llama-3.3-70b-versatile',
     systemPrompt = '',
     temperature = 0.7,
     topP = 0.95,
     maxTokens = 1024,
-  }: { kind?: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean; model?: string; systemPrompt?: string; temperature?: number; topP?: number; maxTokens?: number }) => {
+  }: { kind?: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: string; model?: string; systemPrompt?: string; temperature?: number; topP?: number; maxTokens?: number }) => {
     abortRef.current?.abort()
     abortRef.current = new AbortController()
 
@@ -113,12 +113,7 @@ export function usePlaygroundChat() {
           const d = line.slice(6).trim()
           if (d === '[DONE]') break
           try {
-            const parsed = JSON.parse(d)
-            if (parsed.error) {
-              const e = Object.assign(new Error(`ERR:${parsed.error}`), { detail: parsed.message ?? parsed.error })
-              throw e
-            }
-            const token = parsed.token as string
+            const token = JSON.parse(d).token as string
             acc += token
             streamCount = (acc.match(/\S+/g) || []).length
             setTokens(streamCount)

@@ -18,8 +18,8 @@ interface Props {
   onTopPChange: (v: number) => void
   maxTokens: number
   onMaxTokensChange: (v: number) => void
-  injectError: boolean
-  onInjectErrorChange: (v: boolean) => void
+  injectError: string
+  onInjectErrorChange: (v: string) => void
 }
 
 function SideH({ children }: { children: React.ReactNode }) {
@@ -148,28 +148,31 @@ export function SidePanel({
       {/* Debug */}
       <div className="px-5.5 pt-5.5 pb-5.5">
         <SideH>debug</SideH>
-        <div className="flex items-center justify-between py-1.5">
-          <span className="text-fg-3 font-mono text-[11.5px]">inject error</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={injectError}
-            onClick={() => onInjectErrorChange(!injectError)}
-            title="Force a mid-stream error after ~8 tokens to test error handling"
-            className="relative w-9 h-5 rounded-[10px] border-0 cursor-pointer shrink-0 transition-colors duration-150"
-            style={{ background: injectError ? 'var(--color-error)' : 'var(--rule)' }}
+        <div className="flex flex-col gap-1.5 py-1.5">
+          <span className="text-fg-3 font-mono text-[11.5px]">simulate error</span>
+          <select
+            value={injectError}
+            onChange={e => onInjectErrorChange(e.target.value)}
+            aria-label="Simulate API error"
+            className="appearance-none w-full bg-field border border-rule rounded-lg px-2.5 py-2 pr-7 font-mono text-[11.5px] text-fg cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+            }}
           >
-            <span
-              className="absolute top-0.75 w-3.5 h-3.5 rounded-full block transition-[left] duration-150"
-              style={{ left: injectError ? '19px' : '3px', background: 'oklch(0.95 0.01 270)' }}
-            />
-          </button>
+            <option value="">none</option>
+            <option value="429">429 — rate limit exceeded</option>
+            <option value="401">401 — invalid API key</option>
+            <option value="500">500 — server error</option>
+            <option value="503">503 — service unavailable</option>
+          </select>
+          {injectError && (
+            <p className="text-[10.5px] text-error font-mono leading-normal">
+              next request will return {injectError}
+            </p>
+          )}
         </div>
-        {injectError && (
-          <p className="mt-1 text-[10.5px] text-error font-mono leading-normal">
-            next request will fail after ~8 tokens
-          </p>
-        )}
       </div>
     </aside>
   )

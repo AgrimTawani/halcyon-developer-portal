@@ -19,7 +19,7 @@ export function PlaygroundPage() {
   const [temperature, setTemperature] = useState(0.7)
   const [topP, setTopP]               = useState(0.95)
   const [maxTokens, setMaxTokens]     = useState(1024)
-  const [injectError, setInjectError] = useState(false)
+  const [injectError, setInjectError] = useState('')
   const [showCode, setShowCode]       = useState(true)
   const threadRef = useRef<HTMLDivElement>(null)
 
@@ -34,7 +34,7 @@ export function PlaygroundPage() {
 
   const handleSend = useCallback((args: { kind: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean }) => {
     inf.send({ ...args, model, systemPrompt, temperature, topP, maxTokens, injectError })
-    if (injectError) setInjectError(false)
+    if (injectError) setInjectError('')
   }, [inf, model, systemPrompt, temperature, topP, maxTokens, injectError])
 
   const handlePick = useCallback((text: string) => {
