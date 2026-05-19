@@ -25,7 +25,7 @@ export function DiffPanels({ tokens, loading, modelA, modelB, onModelAChange, on
   }, [])
 
   return (
-    <div style={{ display: 'flex', gap: 'var(--space-4)', flex: 1 }}>
+    <div className="flex gap-4 flex-1">
       <DiffPanel
         ref={panelARef}
         label="Model A"

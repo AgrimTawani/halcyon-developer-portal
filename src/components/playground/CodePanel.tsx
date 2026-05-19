@@ -163,34 +163,13 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
         aria-label="Show API code panel"
         onClick={onToggleCode}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggleCode() }}
-        style={{
-          width: '32px', flexShrink: 0,
-          borderLeft: '1px solid var(--rule-soft)',
-          background: 'var(--ink)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', gap: '10px',
-          color: 'var(--fg-4)',
-          transition: 'color 140ms, background 140ms',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.color = 'var(--fg)'
-          e.currentTarget.style.background = 'var(--graphite)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.color = 'var(--fg-4)'
-          e.currentTarget.style.background = 'var(--ink)'
-        }}
+        className="w-8 shrink-0 border-l border-rule-soft bg-ink flex flex-col items-center justify-center cursor-pointer gap-2.5 text-fg-4 transition-colors duration-140 hover:text-fg hover:bg-graphite"
       >
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M5.5 3.5 2 8l3.5 4.5M10.5 3.5 14 8l-3.5 4.5"/>
         </svg>
-        <span style={{
-          writingMode: 'vertical-rl', transform: 'rotate(180deg)',
-          fontFamily: 'var(--font-mono), monospace',
-          fontSize: '10px', letterSpacing: '0.10em',
-          fontWeight: 500, userSelect: 'none', textTransform: 'uppercase',
-        }}>
+        <span className="font-mono text-[10px] tracking-widest font-medium select-none uppercase"
+          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           code
         </span>
       </div>
@@ -199,48 +178,16 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
 
   // ── Expanded panel ───────────────────────────────────────────────
   return (
-    <div style={{
-      width: '400px', flexShrink: 0,
-      borderLeft: '1px solid var(--rule-soft)',
-      background: 'var(--ink)',
-      display: 'flex', flexDirection: 'column',
-      overflow: 'hidden',
-    }}>
+    <div className="w-100 shrink-0 border-l border-rule-soft bg-ink flex flex-col overflow-hidden">
       {/* ── Header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '9px 12px',
-        borderBottom: '1px solid var(--rule-soft)',
-        flexShrink: 0,
-      }}>
+      <div className="flex items-center gap-2 px-3 py-2.25 border-b border-rule-soft shrink-0">
         {/* Hide button */}
         <button
           type="button"
           onClick={onToggleCode}
           aria-label="Hide code panel"
           title="Hide code"
-          style={{
-            appearance: 'none', cursor: 'pointer',
-            border: '1px solid var(--rule-soft)',
-            borderRadius: '5px',
-            background: 'transparent',
-            color: 'var(--fg-4)',
-            display: 'inline-flex', alignItems: 'center', gap: '4px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '10.5px', fontWeight: 500,
-            padding: '3px 8px', flexShrink: 0,
-            transition: 'color 130ms, background 130ms, border-color 130ms',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.color = 'var(--fg)'
-            e.currentTarget.style.background = 'var(--graphite)'
-            e.currentTarget.style.borderColor = 'var(--rule)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.color = 'var(--fg-4)'
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = 'var(--rule-soft)'
-          }}
+          className="appearance-none cursor-pointer border border-rule-soft rounded-[5px] bg-transparent text-fg-4 inline-flex items-center gap-1 font-mono text-[10.5px] font-medium px-2 py-0.75 shrink-0 transition-colors duration-130 hover:text-fg hover:bg-graphite hover:border-rule"
         >
           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
             <path d="M7 1L3 5l4 4"/>
@@ -249,22 +196,15 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
         </button>
 
         {/* Language tabs */}
-        <div style={{
-          display: 'flex', flex: 1,
-          background: 'var(--graphite)', border: '1px solid var(--rule-soft)',
-          borderRadius: '7px', padding: '2px', gap: '1px',
-        }}>
+        <div className="flex flex-1 bg-graphite border border-rule-soft rounded-[7px] p-0.5 gap-px">
           {LANGS.map(l => (
-            <button key={l} type="button" onClick={() => setLang(l)} style={{
-              appearance: 'none', border: 0, cursor: 'pointer',
-              flex: 1, padding: '3px 0', borderRadius: '5px',
-              fontFamily: 'var(--font-mono), monospace',
-              fontSize: '10.5px', fontWeight: 500,
-              background: lang === l ? 'var(--ash)' : 'transparent',
-              color: lang === l ? 'var(--fg)' : 'var(--fg-3)',
-              transition: 'background 100ms, color 100ms',
-              boxShadow: lang === l ? '0 1px 2px oklch(0 0 0 / 0.30)' : 'none',
-            }}>{l}</button>
+            <button key={l} type="button" onClick={() => setLang(l)}
+              className={[
+                'appearance-none border-0 cursor-pointer flex-1 py-0.75 rounded-[5px] font-mono text-[10.5px] font-medium transition-[background,color] duration-100',
+                lang === l ? 'bg-ash text-fg' : 'bg-transparent text-fg-3',
+              ].join(' ')}
+              style={lang === l ? { boxShadow: '0 1px 2px oklch(0 0 0 / 0.30)' } : {}}
+            >{l}</button>
           ))}
         </div>
 
@@ -273,26 +213,7 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
           type="button"
           onClick={copy}
           aria-label="Copy code to clipboard"
-          style={{
-            appearance: 'none', cursor: 'pointer',
-            border: '1px solid var(--rule-soft)',
-            borderRadius: '5px', padding: '3px 9px',
-            background: 'var(--graphite)',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '10.5px', fontWeight: 500,
-            color: 'var(--fg-2)',
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            flexShrink: 0,
-            transition: 'background 130ms, border-color 130ms, color 130ms',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--ash)'
-            e.currentTarget.style.borderColor = 'var(--rule)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'var(--graphite)'
-            e.currentTarget.style.borderColor = 'var(--rule-soft)'
-          }}
+          className="appearance-none cursor-pointer border border-rule-soft rounded-[5px] py-0.75 px-2.25 bg-graphite font-mono text-[10.5px] font-medium text-fg-2 inline-flex items-center gap-1.25 shrink-0 transition-colors duration-130 hover:bg-ash hover:border-rule"
         >
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="5" y="5" width="9" height="9" rx="1.5"/>
@@ -303,17 +224,9 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
       </div>
 
       {/* ── Code block ── */}
-      <div style={{
-        flex: 1, overflow: 'auto',
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'var(--rule) transparent',
-      }}>
-        <pre style={{
-          margin: 0, padding: '18px 20px',
-          fontFamily: 'var(--font-mono), monospace',
-          fontSize: '11.5px', lineHeight: 1.75,
-          whiteSpace: 'pre', tabSize: 2,
-        }}>
+      <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-rule scrollbar-track-transparent">
+        <pre className="m-0 px-5 py-4.5 font-mono text-[11.5px] leading-[1.75] whitespace-pre"
+          style={{ tabSize: 2 }}>
           {highlight(code, lang)}
         </pre>
       </div>
@@ -322,23 +235,12 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
       {copiedPos && (
         <div
           aria-live="polite"
+          className="fixed bg-graphite border border-rule rounded-md px-2.5 py-1 text-[11.5px] text-success font-mono font-medium pointer-events-none z-9999 flex items-center gap-1.25"
           style={{
-            position: 'fixed',
             left: copiedPos.x + 14,
             top: copiedPos.y - 32,
-            background: 'var(--graphite)',
-            border: '1px solid var(--rule)',
-            borderRadius: '6px',
-            padding: '4px 10px',
-            fontSize: '11.5px',
-            color: 'var(--color-success)',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 500,
-            pointerEvents: 'none',
-            zIndex: 9999,
             animation: 'copiedFade 1.6s var(--ease-out) forwards',
             boxShadow: '0 4px 14px oklch(0 0 0 / 0.45)',
-            display: 'flex', alignItems: 'center', gap: '5px',
           }}
         >
           <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

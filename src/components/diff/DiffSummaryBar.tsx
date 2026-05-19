@@ -5,6 +5,15 @@ interface Props {
   result: DiffResult
 }
 
+type ChipVariant = 'removed' | 'added' | 'changed' | 'unchanged'
+
+const chipClasses: Record<ChipVariant, string> = {
+  removed:   'inline-flex items-center gap-1.25 px-2.5 py-1 bg-error-dim border border-error/30 rounded-[4px] text-error',
+  added:     'inline-flex items-center gap-1.25 px-2.5 py-1 bg-success-dim border border-success/30 rounded-[4px] text-success',
+  changed:   'inline-flex items-center gap-1.25 px-2.5 py-1 bg-warning-dim border border-warning/30 rounded-[4px] text-warning',
+  unchanged: 'inline-flex items-center gap-1.25 px-2.5 py-1 bg-field border border-rule-soft rounded-[4px] text-fg-3',
+}
+
 export function DiffSummaryBar({ result }: Props) {
   const { similarity, counts } = result
 
@@ -15,86 +24,53 @@ export function DiffSummaryBar({ result }: Props) {
   return (
     <div
       aria-label="Diff summary"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-4)',
-        padding: 'var(--space-4) var(--space-5)',
-        background: 'var(--field)',
-        border: '1px solid var(--rule)',
-        borderRadius: 'var(--radius-md)',
-        flexWrap: 'wrap',
-        rowGap: 'var(--space-3)',
-      }}
+      className="flex items-center gap-4 px-5 py-4 bg-field border border-rule rounded-lg flex-wrap gap-y-3"
     >
       {/* Similarity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flex: '0 0 auto' }}>
-        <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '11px', color: 'var(--fg-4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+      <div className="flex items-center gap-4 shrink-0">
+        <span className="font-mono text-[11px] text-fg-4 tracking-[0.06em] uppercase">
           Similarity
         </span>
-        <span style={{
-          fontFamily: 'var(--font-mono), monospace',
-          fontSize: '22px',
-          fontWeight: 700,
-          color: gaugeColor,
-          letterSpacing: '-0.02em',
-          lineHeight: 1,
-        }}>
+        <span className="font-mono text-[22px] font-bold tracking-[-0.02em] leading-none"
+          style={{ color: gaugeColor }}>
           {similarity}%
         </span>
         {/* Gauge */}
-        <div style={{
-          width: '100px', height: '4px',
-          background: 'var(--rule-soft)',
-          borderRadius: 'var(--radius-pill)',
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}>
-          <div style={{
-            height: '100%',
-            width: `${similarity}%`,
-            background: gaugeColor,
-            borderRadius: 'var(--radius-pill)',
-            boxShadow: `0 0 8px ${gaugeColor}`,
-            transition: 'width 500ms var(--ease-out)',
-          }} />
+        <div className="w-25 h-1 bg-rule-soft rounded-full overflow-hidden shrink-0">
+          <div
+            className="h-full rounded-full transition-[width] duration-500"
+            style={{
+              width: `${similarity}%`,
+              background: gaugeColor,
+              boxShadow: `0 0 8px ${gaugeColor}`,
+            }}
+          />
         </div>
       </div>
 
       {/* Divider */}
-      <div style={{ width: '1px', height: '24px', background: 'var(--rule-soft)', flexShrink: 0 }} />
+      <div className="w-px h-6 bg-rule-soft shrink-0" />
 
       {/* Counts */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono), monospace', fontSize: '12px', flexWrap: 'wrap', rowGap: '4px' }}>
-        <CountChip value={counts.removed} label="removed" color="var(--color-error)" bg="var(--color-error-dim)" prefix="−" />
-        <CountChip value={counts.added} label="added" color="var(--color-success)" bg="var(--color-success-dim)" prefix="+" />
-        <CountChip value={counts.changed} label="changed" color="var(--color-warning)" bg="var(--color-warning-dim)" prefix="≈" />
-        <CountChip value={counts.unchanged} label="unchanged" color="var(--fg-3)" bg="var(--field)" prefix="" />
+      <div className="flex items-center gap-1 font-mono text-[12px] flex-wrap gap-y-1">
+        <CountChip variant="removed"   value={counts.removed}   prefix="−" />
+        <CountChip variant="added"     value={counts.added}     prefix="+" />
+        <CountChip variant="changed"   value={counts.changed}   prefix="≈" />
+        <CountChip variant="unchanged" value={counts.unchanged} prefix="" />
       </div>
     </div>
   )
 }
 
-function CountChip({ value, label, color, bg, prefix }: {
-  value: number; label: string; color: string; bg: string; prefix: string
+function CountChip({ value, prefix, variant }: {
+  value: number; prefix: string; variant: ChipVariant
 }) {
+  const label = variant
   return (
-    <div
-      title={`${value} ${label}`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        padding: '4px 10px',
-        background: bg,
-        border: `1px solid ${color}30`,
-        borderRadius: 'var(--radius-sm)',
-        color,
-      }}
-    >
-      <span style={{ fontWeight: 600, fontSize: '11px' }}>{prefix}</span>
-      <span style={{ fontWeight: 700, fontSize: '13px' }}>{value}</span>
-      <span style={{ color: `${color}90`, fontSize: '10px', letterSpacing: '0.04em' }}>{label}</span>
+    <div title={`${value} ${label}`} className={chipClasses[variant]}>
+      <span className="font-semibold text-[11px]">{prefix}</span>
+      <span className="font-bold text-[13px]">{value}</span>
+      <span className="text-[10px] tracking-[0.04em] opacity-60">{label}</span>
     </div>
   )
 }

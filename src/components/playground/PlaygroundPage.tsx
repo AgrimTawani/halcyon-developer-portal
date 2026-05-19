@@ -23,7 +23,6 @@ export function PlaygroundPage() {
   const [showCode, setShowCode]       = useState(true)
   const threadRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll while streaming
   useEffect(() => {
     const el = threadRef.current
     if (!el) return
@@ -35,7 +34,7 @@ export function PlaygroundPage() {
 
   const handleSend = useCallback((args: { kind: 'text' | 'audio'; text: string; audioLabel?: string; injectError?: boolean }) => {
     inf.send({ ...args, model, systemPrompt, temperature, topP, maxTokens, injectError })
-    if (injectError) setInjectError(false) // auto-reset after use
+    if (injectError) setInjectError(false)
   }, [inf, model, systemPrompt, temperature, topP, maxTokens, injectError])
 
   const handlePick = useCallback((text: string) => {
@@ -43,39 +42,18 @@ export function PlaygroundPage() {
     setTimeout(() => document.getElementById('ta-prompt')?.focus(), 30)
   }, [])
 
-  const metricsHeight = 55
-  const navHeight = 60
-
   return (
     <>
-      {/* Skip link */}
-      <a
-        href="#composer"
-        style={{
-          position: 'absolute', left: '-9999px', top: '8px', zIndex: 100,
-          background: 'var(--accent)', color: 'var(--ink)',
-          padding: '8px 14px', borderRadius: '6px',
-          fontWeight: 600, fontSize: '13px',
-        }}
-        onFocus={e => { e.currentTarget.style.left = '8px' }}
-        onBlur={e => { e.currentTarget.style.left = '-9999px' }}
-      >
-        Skip to composer
-      </a>
-
-      {/* Metrics bar */}
       <ChatMetricsBar
-        state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft} model={model}
+        state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft}
+        elapsed={inf.elapsed} maxTokens={maxTokens} model={model}
+        onClear={inf.clearAll}
       />
 
-      {/* Main shell — flex so thread + code sit side by side */}
-      <div style={{
-        display: 'flex',
-        height: `calc(100vh - ${navHeight}px - ${metricsHeight}px)`,
-        overflow: 'hidden',
-      }}>
+      {/* Main shell */}
+      <div className="flex overflow-hidden" style={{ height: 'calc(100vh - 60px - 55px)' }}>
         {/* Chat column */}
-        <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+        <main className="flex-1 min-w-0 flex flex-col relative overflow-hidden">
           {inf.messages.length === 0 ? (
             <EmptyState onPick={handlePick} />
           ) : (
@@ -83,7 +61,7 @@ export function PlaygroundPage() {
               messages={inf.messages}
               activeId={inf.activeId}
               state={inf.state}
-              onRetry={inf.retryFromError}
+              onRetry={(id) => inf.retryFromError(id, { model, systemPrompt, temperature, topP, maxTokens })}
               onDismiss={inf.dismissError}
               threadRef={threadRef}
               onPick={handlePick}
@@ -97,10 +75,10 @@ export function PlaygroundPage() {
             streaming={inf.state === 'streaming'}
             value={value}
             setValue={setValue}
+            maxTokens={maxTokens}
           />
         </main>
 
-        {/* Code panel — always rendered; collapses to slim strip when hidden */}
         <CodePanel
           model={model}
           systemPrompt={systemPrompt}
@@ -112,7 +90,6 @@ export function PlaygroundPage() {
           onToggleCode={() => setShowCode(s => !s)}
         />
 
-        {/* Settings side panel */}
         <SidePanel
           state={inf.state} tokens={inf.tokens} tps={inf.tps} ttft={inf.ttft}
           model={model} onModelChange={setModel}

@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import { GROQ_MODELS, modelById } from '@/lib/models'
 import type { ChatState } from '@/types'
 
@@ -23,80 +24,61 @@ interface Props {
 
 function SideH({ children }: { children: React.ReactNode }) {
   return (
-    <h3 style={{
-      fontFamily: 'var(--font-serif), Georgia, serif',
-      fontStyle: 'italic',
-      fontSize: '15px', fontWeight: 400, letterSpacing: '-0.005em',
-      color: 'var(--fg)', margin: '0 0 12px',
-      display: 'flex', alignItems: 'baseline', gap: '8px',
-    }}>
+    <h3 className="font-serif italic text-[15px] font-normal tracking-[-0.005em] text-fg mb-3 flex items-baseline gap-2">
       {children}
-      <span style={{ flex: 1, height: '1px', background: 'oklch(0.245 0.024 270 / 0.45)', alignSelf: 'center', display: 'block' }} />
+      <span className="flex-1 h-px bg-[oklch(0.245_0.024_270/0.45)] self-center block" />
     </h3>
   )
 }
 
 function Row({ k, children }: { k: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', fontSize: '12.5px' }}>
-      <span style={{ color: 'var(--fg-3)', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>{k}</span>
-      <span style={{ color: 'var(--fg)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontVariantNumeric: 'tabular-nums', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>{children}</span>
+    <div className="flex items-center justify-between py-1.5 text-[12.5px]">
+      <span className="text-fg-3 font-mono text-[11.5px]">{k}</span>
+      <span className="text-fg font-mono text-[12px] tabular-nums inline-flex items-center gap-1.5">{children}</span>
     </div>
   )
 }
 
-function Slider({ label, value, onChange, min, max, step }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number }) {
+function Slider({ label, value, onChange, min, max, step }: {
+  label: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number
+}) {
   const display = step < 1 ? value.toFixed(2) : value.toLocaleString()
   return (
-    <div style={{ padding: '6px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-3)', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>
+    <div className="py-1.5 flex flex-col gap-1.5">
+      <div className="flex justify-between text-fg-3 font-mono text-[11.5px]">
         <span>{label}</span>
-        <span style={{ color: 'var(--fg)', fontSize: '12px' }}>{display}</span>
+        <span className="text-fg text-[12px]">{display}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value}
+      <input
+        type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(step < 1 ? parseFloat(e.target.value) : parseInt(e.target.value))}
         aria-label={label}
-        style={{ appearance: 'none', width: '100%', height: '14px', background: 'transparent', accentColor: 'var(--accent)' }}
+        className="appearance-none w-full h-3.5 bg-transparent"
+        style={{ accentColor: 'var(--accent)' }}
       />
     </div>
   )
 }
 
-const selectStyle: React.CSSProperties = {
-  appearance: 'none',
-  width: '100%',
-  background: 'var(--field)',
-  border: '1px solid var(--rule)',
-  borderRadius: '8px',
-  padding: '8px 28px 8px 10px',
-  fontFamily: 'var(--font-mono), monospace',
-  fontSize: '11.5px',
-  color: 'var(--fg)',
-  cursor: 'pointer',
-  outline: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-}
-
-export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, systemPrompt, onSystemPromptChange, temperature, onTemperatureChange, topP, onTopPChange, maxTokens, onMaxTokensChange, injectError, onInjectErrorChange }: Props) {
+export function SidePanel({
+  state, tokens, tps, ttft,
+  model, onModelChange,
+  systemPrompt, onSystemPromptChange,
+  temperature, onTemperatureChange,
+  topP, onTopPChange,
+  maxTokens, onMaxTokensChange,
+  injectError, onInjectErrorChange,
+}: Props) {
   const active = modelById(model)
-  const section: React.CSSProperties = { padding: '22px 22px 8px' }
 
   return (
     <aside
       aria-label="Inference parameters"
-      style={{
-        borderLeft: '1px solid var(--rule-soft)',
-        background: 'var(--ink)',
-        display: 'flex', flexDirection: 'column',
-        minHeight: 0, overflowY: 'auto',
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'var(--rule) transparent',
-      }}
+      className="border-l border-rule-soft bg-ink flex flex-col min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-rule scrollbar-track-transparent"
     >
       {/* System Prompt */}
-      <div style={{ ...section, paddingBottom: '16px' }}>
+      <div className="px-5.5 pt-5.5 pb-4">
         <SideH>system</SideH>
         <textarea
           value={systemPrompt}
@@ -104,33 +86,24 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
           placeholder="You are a helpful assistant…"
           aria-label="System prompt"
           rows={4}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            background: 'var(--field)',
-            border: '1px solid var(--rule)',
-            borderRadius: '8px',
-            padding: '9px 10px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '11.5px',
-            color: 'var(--fg)',
-            lineHeight: 1.6,
-            resize: 'vertical',
-            outline: 'none',
-          }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--rule-hi)' }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--rule)' }}
+          className="w-full bg-field border border-rule rounded-lg px-2.5 py-2.25 font-mono text-[11.5px] text-fg leading-[1.6] resize-y outline-none transition-colors duration-150 focus:border-rule-hi"
         />
       </div>
 
       {/* Model */}
-      <div style={section}>
+      <div className="px-5.5 pt-5.5 pb-2">
         <SideH>model</SideH>
-        <div style={{ position: 'relative', marginBottom: '10px' }}>
+        <div className="relative mb-2.5">
           <select
             value={model}
             onChange={e => onModelChange(e.target.value)}
             aria-label="Select model"
-            style={selectStyle}
+            className="appearance-none w-full bg-field border border-rule rounded-lg px-2.5 py-2 pr-7 font-mono text-[11.5px] text-fg cursor-pointer outline-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+            }}
           >
             {GROQ_MODELS.map(m => (
               <option key={m.id} value={m.id}>{m.label} {m.params}</option>
@@ -142,22 +115,21 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
       </div>
 
       {/* Parameters */}
-      <div style={section}>
+      <div className="px-5.5 pt-5.5 pb-2">
         <SideH>parameters</SideH>
         <Slider label="temperature" value={temperature} onChange={onTemperatureChange} min={0} max={2}    step={0.01} />
-        <Slider label="top_p"       value={topP}       onChange={onTopPChange}        min={0} max={1}    step={0.01} />
-        <Slider label="max_tokens"  value={maxTokens}  onChange={onMaxTokensChange}   min={64} max={4096} step={64}  />
+        <Slider label="top_p"       value={topP}        onChange={onTopPChange}        min={0} max={1}    step={0.01} />
+        <Slider label="max_tokens"  value={maxTokens}   onChange={onMaxTokensChange}   min={64} max={4096} step={64} />
       </div>
 
       {/* Live */}
-      <div style={section}>
+      <div className="px-5.5 pt-5.5 pb-2">
         <SideH>live</SideH>
         <Row k="state">
-          <span aria-hidden="true" style={{
-            width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, display: 'inline-block',
-            background: state === 'streaming' ? 'var(--color-live)' : state === 'error' ? 'var(--color-error)' : 'var(--fg-4)',
-            animation: state === 'streaming' ? 'sdotPulse 1.4s ease-in-out infinite' : 'none',
-          }} />
+          <span aria-hidden="true" className={[
+            'w-2 h-2 rounded-full shrink-0 inline-block',
+            state === 'streaming' ? 'bg-live animate-[sdotPulse_1.4s_ease-in-out_infinite]' : state === 'error' ? 'bg-error' : 'bg-fg-4',
+          ].join(' ')} />
           {state}
         </Row>
         <Row k="tokens">{tokens.toLocaleString()}</Row>
@@ -166,7 +138,7 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
       </div>
 
       {/* Stream */}
-      <div style={section}>
+      <div className="px-5.5 pt-5.5 pb-2">
         <SideH>stream</SideH>
         <Row k="transport">sse</Row>
         <Row k="chunking">token</Row>
@@ -174,35 +146,27 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
       </div>
 
       {/* Debug */}
-      <div style={{ ...section, paddingBottom: '22px' }}>
+      <div className="px-5.5 pt-5.5 pb-5.5">
         <SideH>debug</SideH>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
-          <span style={{ color: 'var(--fg-3)', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>inject error</span>
+        <div className="flex items-center justify-between py-1.5">
+          <span className="text-fg-3 font-mono text-[11.5px]">inject error</span>
           <button
             type="button"
             role="switch"
             aria-checked={injectError}
             onClick={() => onInjectErrorChange(!injectError)}
             title="Force a mid-stream error after ~8 tokens to test error handling"
-            style={{
-              appearance: 'none', border: 0, cursor: 'pointer',
-              width: '36px', height: '20px', borderRadius: '10px',
-              background: injectError ? 'var(--color-error)' : 'var(--rule)',
-              position: 'relative', transition: 'background 150ms', flexShrink: 0,
-            }}
+            className="relative w-9 h-5 rounded-[10px] border-0 cursor-pointer shrink-0 transition-colors duration-150"
+            style={{ background: injectError ? 'var(--color-error)' : 'var(--rule)' }}
           >
-            <span style={{
-              position: 'absolute', top: '3px',
-              left: injectError ? '19px' : '3px',
-              width: '14px', height: '14px', borderRadius: '50%',
-              background: 'oklch(0.95 0.01 270)',
-              transition: 'left 150ms',
-              display: 'block',
-            }} />
+            <span
+              className="absolute top-0.75 w-3.5 h-3.5 rounded-full block transition-[left] duration-150"
+              style={{ left: injectError ? '19px' : '3px', background: 'oklch(0.95 0.01 270)' }}
+            />
           </button>
         </div>
         {injectError && (
-          <p style={{ margin: '4px 0 0', fontSize: '10.5px', color: 'var(--color-error)', fontFamily: 'var(--font-mono)', lineHeight: 1.5 }}>
+          <p className="mt-1 text-[10.5px] text-error font-mono leading-normal">
             next request will fail after ~8 tokens
           </p>
         )}
@@ -210,6 +174,3 @@ export function SidePanel({ state, tokens, tps, ttft, model, onModelChange, syst
     </aside>
   )
 }
-
-// Need React import for useState in non-'use client' JSX contexts
-import React from 'react'

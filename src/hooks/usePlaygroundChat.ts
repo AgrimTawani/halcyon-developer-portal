@@ -4,18 +4,29 @@ import type { ChatMessage, ChatState, UserMessage, AssistantMessage, ErrorMessag
 
 function uid() { return 'm_' + Math.random().toString(36).slice(2, 8) }
 
+const ERROR_TITLES: Record<string, string> = {
+  '401': 'invalid API key',
+  '429': 'rate limit exceeded',
+  '500': 'server error',
+  '503': 'service unavailable',
+  '504': 'upstream timeout',
+  'NET': 'connection interrupted',
+  'ERR': 'stream interrupted',
+}
+
 export function usePlaygroundChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [state, setState] = useState<ChatState>('idle')
   const [tokens, setTokens] = useState(0)
   const [tps, setTps] = useState(0)
   const [ttft, setTtft] = useState<number | null>(null)
+  const [elapsed, setElapsed] = useState<number | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const abortRef      = useRef<AbortController | null>(null)
   const startRef      = useRef<number>(0)
   const tickRef       = useRef<ReturnType<typeof setInterval> | null>(null)
-  const cumulativeRef = useRef<number>(0) // always-sync total across all turns
+  const cumulativeRef = useRef<number>(0)
 
   const stopTicker = () => {
     if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
@@ -45,14 +56,18 @@ export function usePlaygroundChat() {
     setMessages(prev => [...prev, userMsg, asstMsg])
     setActiveId(asstId)
     setState('streaming')
-    setTps(0); setTtft(null)
+    setTps(0); setTtft(null); setElapsed(null); setTokens(0)
 
-    const base = cumulativeRef.current // captured synchronously before any async
+    stopTicker() // clear any stale interval before starting a new one
+    const base = cumulativeRef.current
     startRef.current = performance.now()
     let streamCount = 0
+
     tickRef.current = setInterval(() => {
-      const elapsed = (performance.now() - startRef.current) / 1000
-      if (elapsed > 0) setTps(parseFloat((streamCount / elapsed).toFixed(1)))
+      const ms = performance.now() - startRef.current
+      const secs = ms / 1000
+      if (secs > 0) setTps(parseFloat((streamCount / secs).toFixed(1)))
+      setElapsed(ms)
     }, 100)
 
     try {
@@ -62,7 +77,19 @@ export function usePlaygroundChat() {
         body: JSON.stringify({ prompt: text, model, systemPrompt, temperature, topP, maxTokens, injectError }),
         signal: abortRef.current.signal,
       })
-      if (!res.ok) throw new Error(`server:${res.status}`)
+
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '')
+        let groqMsg = errBody
+        try {
+          const json = JSON.parse(errBody.replace(/^Groq error:\s*/i, ''))
+          groqMsg = json?.error?.message ?? errBody
+        } catch { /* keep raw text */ }
+        const e = new Error(`server:${res.status}`) as Error & { detail: string }
+        e.detail = groqMsg
+        throw e
+      }
+
       if (!res.body) throw new Error('no-body')
 
       const reader  = res.body.getReader()
@@ -89,7 +116,7 @@ export function usePlaygroundChat() {
             const token = JSON.parse(d).token as string
             acc += token
             streamCount = (acc.match(/\S+/g) || []).length
-            setTokens(base + streamCount)
+            setTokens(streamCount)
             setMessages(prev => prev.map(m => m.id === asstId ? { ...m, text: acc } : m))
           } catch { /* skip malformed */ }
         }
@@ -97,12 +124,16 @@ export function usePlaygroundChat() {
 
       stopTicker()
       cumulativeRef.current = base + streamCount
-      const elapsed = (performance.now() - startRef.current) / 1000
-      setTps(parseFloat((elapsed > 0 ? streamCount / elapsed : 0).toFixed(1)))
+      const finalMs = performance.now() - startRef.current
+      const finalSecs = finalMs / 1000
+      setTps(parseFloat((finalSecs > 0 ? streamCount / finalSecs : 0).toFixed(1)))
+      setElapsed(finalMs)
       setState('done')
       setActiveId(null)
     } catch (err) {
       stopTicker()
+      setElapsed(performance.now() - startRef.current)
+
       if (err instanceof Error && err.name === 'AbortError') {
         cumulativeRef.current = base + streamCount
         setMessages(prev => prev.map(m => m.id === asstId ? { ...m, stopped: true } as AssistantMessage : m))
@@ -110,13 +141,20 @@ export function usePlaygroundChat() {
         setActiveId(null)
         return
       }
-      const msg = err instanceof Error ? err.message : ''
-      const code = msg.startsWith('server:') ? msg.replace('server:', '') : 'ERR'
-      const title = code === '504' ? 'upstream timeout' : 'stream interrupted'
+
+      const detail = (err as Error & { detail?: string }).detail
+      const rawMsg = err instanceof Error ? err.message : String(err)
+      const httpCode = rawMsg.match(/^server:(\d+)$/)?.[1] ?? null
+      const isNetwork = !httpCode && err instanceof TypeError
+
+      const code  = httpCode ?? (isNetwork ? 'NET' : 'ERR')
+      const title = ERROR_TITLES[code] ?? 'stream interrupted'
+      const text  = detail ?? (isNetwork ? 'Network connection lost — check your internet and retry.' : rawMsg)
+
       const errId = uid()
       const errMsg: ErrorMessage = {
         id: errId, role: 'system', kind: 'error',
-        code, title, text: msg,
+        code, title, text,
         relatedTo: asstId,
         ts: Date.now(),
       }
@@ -133,7 +171,7 @@ export function usePlaygroundChat() {
 
   const stop = useCallback(() => { abortRef.current?.abort() }, [])
 
-  const retryFromError = useCallback((errId: string) => {
+  const retryFromError = useCallback((errId: string, params?: { model?: string; systemPrompt?: string; temperature?: number; topP?: number; maxTokens?: number }) => {
     setMessages(prev => {
       const errIdx = prev.findIndex(m => m.id === errId)
       if (errIdx < 0) return prev
@@ -142,7 +180,7 @@ export function usePlaygroundChat() {
           const userMsg = prev[i] as UserMessage
           const trimmed = prev.slice(0, i + 1)
           setMessages(trimmed)
-          send({ kind: userMsg.kind, text: userMsg.text, audioLabel: userMsg.audioLabel, injectError: false })
+          send({ kind: userMsg.kind, text: userMsg.text, audioLabel: userMsg.audioLabel, injectError: false, ...params })
           return trimmed
         }
       }
@@ -160,7 +198,7 @@ export function usePlaygroundChat() {
     stopTicker()
     setMessages([])
     cumulativeRef.current = 0
-    setTokens(0); setTps(0); setTtft(null)
+    setTokens(0); setTps(0); setTtft(null); setElapsed(null)
     setState('idle')
     setActiveId(null)
   }, [])
@@ -170,5 +208,5 @@ export function usePlaygroundChat() {
     stopTicker()
   }, [])
 
-  return { messages, state, tokens, tps, ttft, activeId, send, stop, retryFromError, dismissError, clearAll }
+  return { messages, state, tokens, tps, ttft, elapsed, activeId, send, stop, retryFromError, dismissError, clearAll }
 }
