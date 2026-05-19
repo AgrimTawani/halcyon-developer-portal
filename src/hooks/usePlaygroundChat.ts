@@ -113,7 +113,12 @@ export function usePlaygroundChat() {
           const d = line.slice(6).trim()
           if (d === '[DONE]') break
           try {
-            const token = JSON.parse(d).token as string
+            const parsed = JSON.parse(d)
+            if (parsed.error) {
+              const e = Object.assign(new Error(`ERR:${parsed.error}`), { detail: parsed.message ?? parsed.error })
+              throw e
+            }
+            const token = parsed.token as string
             acc += token
             streamCount = (acc.match(/\S+/g) || []).length
             setTokens(streamCount)

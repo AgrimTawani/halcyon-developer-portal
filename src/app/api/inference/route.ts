@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
             try {
               const token = JSON.parse(data).choices?.[0]?.delta?.content
               if (!token) continue
-              if (injectError && tokensSent > 8) {
-                controller.error(new Error('UPSTREAM_TIMEOUT: model worker did not respond within budget'))
+              if (injectError && tokensSent >= 8) {
+                enq(`data: ${JSON.stringify({ error: 'UPSTREAM_TIMEOUT', message: 'Model worker did not respond within budget (simulated)' })}\n\n`)
+                controller.close()
                 return
               }
               enq(`data: ${JSON.stringify({ token })}\n\n`)
