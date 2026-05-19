@@ -45,9 +45,15 @@ const WAVE_COUNT = 22
 
 export function Composer({ mode, setMode, onSend, onStop, streaming, value, setValue, maxTokens }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null)
-  const [recording, setRecording] = useState(false)
-  const [recTime, setRecTime]     = useState(0)
-  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [recording, setRecording]     = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [micError, setMicError]       = useState<string | null>(null)
+  const [recTime, setRecTime]         = useState(0)
+  const recTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const recTimeRef   = useRef(0)
+  const mediaRecRef  = useRef<MediaRecorder | null>(null)
+  const chunksRef    = useRef<Blob[]>([])
+  const streamRef    = useRef<MediaStream | null>(null)
   const [wave, setWave] = useState(0)
 
   useEffect(() => {
@@ -71,6 +77,14 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
     return () => clearInterval(id)
   }, [recording])
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      if (recTimerRef.current) clearInterval(recTimerRef.current)
+    }
+  }, [])
+
   function formatTime(s: number) {
     const m  = Math.floor(s / 60)
     const ss = Math.floor(s % 60)
@@ -78,30 +92,80 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
   }
 
   function submit() {
-    if (mode === 'audio') {
-      onSend({ kind: 'audio', text: 'Walk me through a canary deployment for rolling new model weights to a fleet.', audioLabel: formatTime(recTime || 4) })
-      setRecTime(0)
-    } else {
-      if (!value.trim()) return
-      onSend({ kind: 'text', text: value })
-      setValue('')
-    }
+    if (mode === 'audio') return // handled by MediaRecorder flow
+    if (!value.trim()) return
+    onSend({ kind: 'text', text: value })
+    setValue('')
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); submit() }
   }
 
-  function toggleRec() {
+  async function toggleRec() {
     if (recording) {
-      if (recTimerRef.current) clearInterval(recTimerRef.current)
+      // Stop — timer cleared immediately, recorder stopped async
+      if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null }
       setRecording(false)
-      submit()
-    } else {
-      setRecording(true)
-      setRecTime(0)
-      recTimerRef.current = setInterval(() => setRecTime(t => t + 0.1), 100)
+      mediaRecRef.current?.stop()
+      return
     }
+
+    setMicError(null)
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicError('Audio recording not supported in this browser')
+      return
+    }
+
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      setMicError('Microphone access denied — check browser permissions')
+      return
+    }
+
+    streamRef.current = stream
+    chunksRef.current = []
+
+    const mr = new MediaRecorder(stream)
+    mediaRecRef.current = mr
+
+    mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+
+    mr.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      const duration = recTimeRef.current
+      setRecTime(0)
+      recTimeRef.current = 0
+
+      const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
+      setTranscribing(true)
+      try {
+        const form = new FormData()
+        form.append('file', blob, 'audio.webm')
+        const res = await fetch('/api/transcribe', { method: 'POST', body: form })
+        const data = await res.json()
+        if (data.text?.trim()) {
+          onSend({ kind: 'audio', text: data.text.trim(), audioLabel: formatTime(duration) })
+        } else {
+          setMicError(data.error || 'Transcription returned empty — try again')
+        }
+      } catch {
+        setMicError('Transcription failed — check your connection')
+      } finally {
+        setTranscribing(false)
+      }
+    }
+
+    mr.start()
+    setRecording(true)
+    setRecTime(0)
+    recTimeRef.current = 0
+    recTimerRef.current = setInterval(() => {
+      setRecTime(t => { const next = +(t + 0.1).toFixed(1); recTimeRef.current = next; return next })
+    }, 100)
   }
 
   const estTokens  = Math.max(0, Math.round(value.length / 4))
@@ -214,36 +278,64 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
         ) : (
           /* Body — audio */
           <div className="p-3.5 flex items-center gap-3.5">
+            {/* Mic / stop button */}
             <button
               type="button"
-              data-recording={recording}
               onClick={toggleRec}
-              aria-label={recording ? 'Stop recording and send' : 'Start recording'}
+              disabled={transcribing}
+              aria-label={recording ? 'Stop recording' : 'Start recording'}
               aria-pressed={recording}
               className={[
-                'w-11 h-11 rounded-full grid place-items-center border-0 cursor-pointer transition-[transform,background] duration-[120ms,140ms]',
+                'w-11 h-11 rounded-full grid place-items-center border-0 cursor-pointer transition-[transform,background] duration-[120ms,140ms] shrink-0',
+                transcribing ? 'bg-graphite text-fg-3 cursor-not-allowed' :
                 recording ? 'bg-error text-fg animate-[recPulse_1.2s_ease-in-out_infinite]' : 'bg-accent text-ink',
               ].join(' ')}
             >
-              {recording
-                ? <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5"/></svg>
-                : <IconMic />
+              {transcribing
+                ? <span className="w-4 h-4 rounded-full border-2 border-fg-4 border-t-fg animate-[spin_0.8s_linear_infinite] inline-block" />
+                : recording
+                  ? <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5"/></svg>
+                  : <IconMic />
               }
             </button>
+
+            {/* Status text */}
             <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <span className="font-mono text-[13px] text-fg tabular-nums tracking-[-0.01em]">{formatTime(recTime)}</span>
-              <span className="text-[11.5px] text-fg-3">{recording ? 'recording — click to stop & transcribe' : 'click mic to start'}</span>
+              {transcribing ? (
+                <>
+                  <span className="font-mono text-[13px] text-fg-3 tabular-nums">transcribing…</span>
+                  <span className="text-[11.5px] text-fg-4">converting speech to text via Whisper</span>
+                </>
+              ) : recording ? (
+                <>
+                  <span className="font-mono text-[13px] text-fg tabular-nums tracking-[-0.01em]">{formatTime(recTime)}</span>
+                  <span className="text-[11.5px] text-fg-3">recording — click to stop &amp; transcribe</span>
+                </>
+              ) : micError ? (
+                <>
+                  <span className="text-[12px] text-error font-mono">{micError}</span>
+                  <span className="text-[11px] text-fg-4">click mic to retry</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-mono text-[13px] text-fg-4">0:00</span>
+                  <span className="text-[11.5px] text-fg-3">click mic to start recording</span>
+                </>
+              )}
             </div>
-            <div aria-hidden="true" className="flex items-center gap-0.5 h-6" style={{ flex: '0 0 120px' }}>
+
+            {/* Waveform */}
+            <div aria-hidden="true" className="flex items-center gap-0.5 h-6 shrink-0" style={{ flex: '0 0 120px' }}>
               {Array.from({ length: WAVE_COUNT }).map((_, i) => {
                 const h = recording
                   ? 4 + Math.abs(Math.sin((i + wave) * 0.55 + i * 0.2)) * 18 + Math.random() * 3
                   : 3 + Math.abs(Math.sin(i * 0.5)) * 2
                 return (
-                  <span key={i} style={{ width: '2px', height: `${h}px`, background: recording ? 'var(--accent)' : 'var(--fg-4)', borderRadius: '1px', transition: 'height 220ms ease, background 200ms ease' }} />
+                  <span key={i} style={{ width: '2px', height: `${h}px`, background: recording ? 'var(--accent)' : transcribing ? 'var(--fg-4)' : 'var(--rule)', borderRadius: '1px', transition: 'height 220ms ease, background 200ms ease' }} />
                 )
               })}
             </div>
+
             {streaming && (
               <button
                 type="button"
@@ -269,7 +361,7 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
               </span>
             </>}
             {mode === 'audio' && (
-              <span>{recording ? '● rec · 16 kHz mono' : '16 kHz mono · max 2:00'}</span>
+              <span>{recording ? '● rec · 16 kHz mono' : transcribing ? '⟳ transcribing via Whisper' : '16 kHz mono · max 2:00'}</span>
             )}
           </div>
           <div className="inline-flex items-center gap-3.5">
