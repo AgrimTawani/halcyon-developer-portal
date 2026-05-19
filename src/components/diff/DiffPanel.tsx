@@ -35,7 +35,7 @@ export const DiffPanel = forwardRef<HTMLDivElement, Props>(
             value={model}
             onChange={e => onModelChange(e.target.value)}
             aria-label={`Select model for ${label}`}
-            className="ml-2 appearance-none bg-ink border border-rule rounded-md py-0.75 pl-2 pr-5.5 font-mono text-[10.5px] text-fg cursor-pointer outline-none"
+            className="ml-2 appearance-none bg-ink border border-rule rounded-md py-0.75 pl-2 pr-5.5 font-mono text-[10.5px] text-fg cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent/60"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23666' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',

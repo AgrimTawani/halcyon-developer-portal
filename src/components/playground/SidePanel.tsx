@@ -75,7 +75,7 @@ export function SidePanel({
   return (
     <aside
       aria-label="Inference parameters"
-      className="border-l border-rule-soft bg-ink flex flex-col min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-rule scrollbar-track-transparent"
+      className="w-72 border-l border-rule-soft bg-ink flex flex-col min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-rule scrollbar-track-transparent"
     >
       {/* System Prompt */}
       <div className="px-5.5 pt-5.5 pb-4">
@@ -98,7 +98,7 @@ export function SidePanel({
             value={model}
             onChange={e => onModelChange(e.target.value)}
             aria-label="Select model"
-            className="appearance-none w-full bg-field border border-rule rounded-lg px-2.5 py-2 pr-7 font-mono text-[11.5px] text-fg cursor-pointer outline-none"
+            className="appearance-none w-full bg-field border border-rule rounded-lg px-2.5 py-2 pr-7 font-mono text-[11.5px] text-fg cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',

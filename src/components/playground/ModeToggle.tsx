@@ -50,6 +50,7 @@ export function ModeToggle({ mode, onChange }: Props) {
           role="tab"
           aria-selected={mode === m}
           onClick={() => onChange(m)}
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           style={{
             position: 'relative',
             zIndex: 1,
@@ -63,7 +64,6 @@ export function ModeToggle({ mode, onChange }: Props) {
             color: mode === m ? (m === 'text' ? 'var(--accent)' : 'var(--text-primary)') : 'var(--text-tertiary)',
             cursor: 'pointer',
             transition: 'color var(--dur-base)',
-            outline: 'none',
             minWidth: '62px',
             display: 'flex',
             alignItems: 'center',

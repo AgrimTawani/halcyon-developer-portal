@@ -55,6 +55,9 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
   const chunksRef    = useRef<Blob[]>([])
   const streamRef    = useRef<MediaStream | null>(null)
   const [wave, setWave] = useState(0)
+  const [liveTranscript, setLiveTranscript] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
 
   useEffect(() => {
     const el = taRef.current
@@ -77,11 +80,11 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
     return () => clearInterval(id)
   }, [recording])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach(t => t.stop())
       if (recTimerRef.current) clearInterval(recTimerRef.current)
+      recognitionRef.current?.stop()
     }
   }, [])
 
@@ -104,8 +107,9 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
 
   async function toggleRec() {
     if (recording) {
-      // Stop — timer cleared immediately, recorder stopped async
       if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null }
+      recognitionRef.current?.stop()
+      recognitionRef.current = null
       setRecording(false)
       mediaRecRef.current?.stop()
       return
@@ -139,6 +143,7 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
       const duration = recTimeRef.current
       setRecTime(0)
       recTimeRef.current = 0
+      setLiveTranscript('')
 
       const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
       setTranscribing(true)
@@ -157,6 +162,26 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
       } finally {
         setTranscribing(false)
       }
+    }
+
+    // Live interim transcript via SpeechRecognition (where supported)
+    const SR = (typeof window !== 'undefined') && (
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    )
+    if (SR) {
+      const rec = new SR()
+      rec.continuous = true
+      rec.interimResults = true
+      rec.onresult = (e: any) => {
+        let interim = ''
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          interim += e.results[i][0].transcript
+        }
+        setLiveTranscript(interim)
+      }
+      rec.onerror = () => { /* ignore — Groq Whisper is the source of truth */ }
+      recognitionRef.current = rec
+      try { rec.start() } catch { /* browser may refuse if mic already open */ }
     }
 
     mr.start()
@@ -309,7 +334,10 @@ export function Composer({ mode, setMode, onSend, onStop, streaming, value, setV
               ) : recording ? (
                 <>
                   <span className="font-mono text-[13px] text-fg tabular-nums tracking-[-0.01em]">{formatTime(recTime)}</span>
-                  <span className="text-[11.5px] text-fg-3">recording — click to stop &amp; transcribe</span>
+                  {liveTranscript
+                    ? <span className="text-[12px] text-fg-2 leading-snug line-clamp-2">{liveTranscript}</span>
+                    : <span className="text-[11.5px] text-fg-3">recording — click to stop &amp; transcribe</span>
+                  }
                 </>
               ) : micError ? (
                 <>

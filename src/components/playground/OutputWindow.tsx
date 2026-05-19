@@ -50,6 +50,8 @@ export function OutputWindow({ state, onRetry }: Props) {
       aria-label="Model response"
       aria-atomic="false"
       tabIndex={0}
+      onFocus={e => { e.currentTarget.style.outline = '2px solid oklch(0.880 0.075 240 / 0.5)'; e.currentTarget.style.outlineOffset = '2px' }}
+      onBlur={e => { e.currentTarget.style.outline = 'none' }}
       style={{
         flex: 1,
         fontFamily: 'var(--font-mono), monospace',
@@ -65,7 +67,6 @@ export function OutputWindow({ state, onRetry }: Props) {
         minHeight: '200px',
         animation: isStreaming ? 'borderPulse 2s ease-in-out infinite' : 'none',
         transition: 'border-color var(--dur-base), box-shadow var(--dur-slow)',
-        outline: 'none',
         wordBreak: 'break-word',
         position: 'relative',
       }}

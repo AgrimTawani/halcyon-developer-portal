@@ -73,7 +73,7 @@ export function DiffPage() {
 
           {/* Prompt input row */}
           <div className="flex gap-3 items-stretch">
-            <div className="flex-1 flex items-center bg-field border border-rule rounded-lg overflow-hidden">
+            <div className="flex-1 flex items-center bg-field border border-rule rounded-lg overflow-hidden focus-within:border-rule-hi focus-within:ring-2 focus-within:ring-accent/20">
               <span className="px-4 text-fg-4 shrink-0 text-[13px]">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="align-middle">
                   <path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>

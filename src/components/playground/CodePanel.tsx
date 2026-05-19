@@ -178,7 +178,7 @@ export function CodePanel({ model, systemPrompt, userPrompt, temperature, topP, 
 
   // ── Expanded panel ───────────────────────────────────────────────
   return (
-    <div className="w-100 shrink-0 border-l border-rule-soft bg-ink flex flex-col overflow-hidden">
+    <div className="w-120 shrink-0 border-l border-rule-soft bg-ink flex flex-col">
       {/* ── Header ── */}
       <div className="flex items-center gap-2 px-3 py-2.25 border-b border-rule-soft shrink-0">
         {/* Hide button */}
