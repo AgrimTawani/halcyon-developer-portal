@@ -180,7 +180,7 @@ export function usePlaygroundChat() {
           const userMsg = prev[i] as UserMessage
           const trimmed = prev.slice(0, i + 1)
           setMessages(trimmed)
-          send({ kind: userMsg.kind, text: userMsg.text, audioLabel: userMsg.audioLabel, injectError: false, ...params })
+          send({ kind: userMsg.kind, text: userMsg.text, audioLabel: userMsg.audioLabel, injectError: '', ...params })
           return trimmed
         }
       }
